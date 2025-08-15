@@ -1,17 +1,8 @@
 {
   "expo": {
-    "sdkVersion": "53.0.0",
-    "jsEngine": "jsc",
     "name": "BabyBubbleBabble",
     "slug": "babybubblebabble",
-    "android": {
-      "package": "com.johnrollins.babybubblebabble",
-      "versionCode": 1
-    },
-    "ios": {
-      "bundleIdentifier": "com.johnrollins.babybubblebabble",
-      "buildNumber": "1.0.0"
-    }
+    "scheme": "babybubblebabble",
+    "android": { "package": "com.anonymous.babybubblebabble" }
   }
 }
-
