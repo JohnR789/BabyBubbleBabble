@@ -7,13 +7,15 @@ import {
   StyleSheet,
   Easing,
   Text,
+  InteractionManager,
 } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import { runOnJS } from 'react-native-reanimated';
 import Bubble from '../components/Bubble';
 import ParentalLock from '../components/ParentalLock';
+import { playPopSound } from '../utils/SoundManager';
 import MusicManager from '../utils/MusicManager';
 import { useNavigation } from '@react-navigation/native';
-import { playPopSound, playGiggleSound, preloadCoreSfx } from '../utils/SoundManager';
 
 /** ---------- Tunables ---------- */
 
@@ -80,14 +82,16 @@ const CLOUD_ROWS = 5;      // how many vertical bands clouds can occupy
 const CLOUD_OPACITY_MIN = 0.18;
 const CLOUD_OPACITY_MAX = 0.33;
 
-/** ---------- Helpers ---------- */
+/** ---------- Time-of-day sky ---------- */
 function skyColorForHour(h) {
   // night → morning → day → evening
-  if (h >= 20 || h < 6)   return '#172b44';
-  if (h < 10)             return '#cfe9ff';
-  if (h < 17)             return '#bfe4ff';
-  return '#ffd8b0';
+  if (h >= 20 || h < 6)   return '#172b44'; // night navy
+  if (h < 10)             return '#cfe9ff'; // morning soft blue
+  if (h < 17)             return '#bfe4ff'; // day bright blue
+  return '#ffd8b0';                          // evening peach
 }
+
+/** ---------- Helpers ---------- */
 const rand  = (min, max) => Math.random() * (max - min) + min;
 const rint  = (min, max) => Math.floor(rand(min, max + 1));
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -96,11 +100,14 @@ const wrapAngle = (a) => {
   while (a <= -Math.PI) a += 2 * Math.PI;
   return a;
 };
+
 function randomOnscreen(width, height, size) {
   const x = clamp(rand(MARGIN, width - size - MARGIN), 0, Math.max(0, width - size));
   const y = clamp(rand(MARGIN, height - size - MARGIN), 0, Math.max(0, height - size));
   return { x, y };
 }
+
+// Weighted type pick: ~50% small, 35% medium, 15% large
 function pickTypeWeighted() {
   const r = Math.random();
   if (r < 0.50) return 'SMALL';
@@ -197,34 +204,8 @@ function CloudsBackground({ width, height, tiltX, tiltY, isNight }) {
   );
 }
 
-/** ---------- Memoized layers ---------- */
-const BubblesLayer = React.memo(function BubblesLayer({ bubbles, tiltX, tiltY }) {
-  return bubbles.map((b) => {
-    const extraTransforms = [
-      { translateX: Animated.multiply(tiltX, b.parallax) },
-      { translateY: Animated.multiply(tiltY, b.parallax * 0.8) },
-    ];
-    return (
-      <Bubble
-        key={b.id}
-        size={b.size}
-        tx={b.tx}
-        ty={b.ty}
-        scale={b.scale}
-        opacity={b.opacity}
-        ringScale={b.ringScale}
-        ringOpacity={b.ringOpacity}
-        tint={b.tint}
-        sticker={b.sticker}
-        onPop={b.onPop}
-        extraTransforms={extraTransforms}
-      />
-    );
-  });
-});
-
+/** ---------- Passive overlay for gun shots (no touches) ---------- */
 const ShotsLayer = React.memo(function ShotsLayer({ shots }) {
-  // Passive, non-interactive layer
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
       {shots.map((s) => (
@@ -239,7 +220,7 @@ const ShotsLayer = React.memo(function ShotsLayer({ shots }) {
           ringOpacity={s.ringOpacity}
           tint={s.tint}
           sticker={s.sticker}
-          disabled
+          onPop={() => {}}
         />
       ))}
     </View>
@@ -251,8 +232,6 @@ export default function BubbleScene() {
   const navigation = useNavigation();
   const { width, height } = useWindowDimensions();
 
-  useEffect(() => { preloadCoreSfx(); }, []);
-
   // time-of-day sky
   const [skyColor, setSkyColor] = useState(() => skyColorForHour(new Date().getHours()));
   useEffect(() => {
@@ -260,7 +239,7 @@ export default function BubbleScene() {
     return () => clearInterval(id);
   }, []);
 
-  // SFX throttles
+  // SFX throttles (less frequent)
   const lastManualPopAt = useRef(0);
   const lastAutoPopAt   = useRef(0);
   const playManualPopSfx = () => {
@@ -319,7 +298,6 @@ export default function BubbleScene() {
   const triggerCombo = () => {
     boostRef.current = BOOST_MULTIPLIER;
     showBadge();
-    try { playGiggleSound(); } catch {}
     clearTimeout(boostTimeoutRef.current);
     boostTimeoutRef.current = setTimeout(() => {
       boostRef.current = 1;
@@ -366,7 +344,7 @@ export default function BubbleScene() {
 
       const parallax = 0.35 + ((size - sizeGlobalMin) / (sizeGlobalMax - sizeGlobalMin)) * 0.85; // 0.35..~1.2
 
-      const b = {
+      return {
         id: Math.random().toString(36).slice(2),
         typeKey, size, tx, ty, scale, opacity, ringScale, ringOpacity,
         curr, speed, maxTurn, legMin, legMax, biasGain, heading,
@@ -375,10 +353,7 @@ export default function BubbleScene() {
         stopped: false,
         ttlTimer: null,
       };
-      b.onPop = () => handleManualPop(b);
-      return b;
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bubbleCount]);
 
   useEffect(() => {
@@ -448,24 +423,6 @@ export default function BubbleScene() {
       b.ttlTimer = setTimeout(() => autoPop(b), rint(TTL_MIN, TTL_MAX));
     };
 
-    const autoPop = (b) => {
-      if (b.stopped) return;
-      b.stopped = true;
-      b.anim?.stop();
-      playAutoPopSfx();
-      Animated.parallel([
-        Animated.sequence([
-          Animated.timing(b.scale, { toValue: 1.08, duration: 100, useNativeDriver: true }),
-          Animated.timing(b.opacity, { toValue: 0, duration: 120, useNativeDriver: true }),
-        ]),
-        Animated.sequence([
-          Animated.timing(b.ringOpacity, { toValue: 0.45, duration: 80, useNativeDriver: true }),
-          Animated.timing(b.ringScale, { toValue: 1.5, duration: 220, useNativeDriver: true }),
-          Animated.timing(b.ringOpacity, { toValue: 0, duration: 110, useNativeDriver: true }),
-        ]),
-      ]).start(() => respawn(b));
-    };
-
     const placeNonOverlapping = (b, placed) => {
       let p = randomOnscreen(width, height, b.size);
       let ok = false;
@@ -492,6 +449,24 @@ export default function BubbleScene() {
       b.stopped = false;
       scheduleTTL(b);
       nextLeg(b);
+    };
+
+    const autoPop = (b) => {
+      if (b.stopped) return;
+      b.stopped = true;
+      b.anim?.stop();
+      playAutoPopSfx();
+      Animated.parallel([
+        Animated.sequence([
+          Animated.timing(b.scale, { toValue: 1.08, duration: 100, useNativeDriver: true }),
+        ]),
+        Animated.sequence([
+          Animated.timing(b.ringOpacity, { toValue: 0.45, duration: 80, useNativeDriver: true }),
+          Animated.timing(b.ringScale, { toValue: 1.5, duration: 220, useNativeDriver: true }),
+          Animated.timing(b.ringOpacity, { toValue: 0, duration: 110, useNativeDriver: true }),
+        ]),
+        Animated.timing(b.opacity, { toValue: 0, duration: 120, useNativeDriver: true }),
+      ]).start(() => respawn(b));
     };
 
     const respawn = (b) => {
@@ -546,34 +521,31 @@ export default function BubbleScene() {
     Animated.parallel([
       Animated.sequence([
         Animated.timing(b.scale, { toValue: 1.15, duration: 110, useNativeDriver: true }),
-        Animated.timing(b.opacity, { toValue: 0, duration: 140, useNativeDriver: true }),
       ]),
       Animated.sequence([
         Animated.timing(b.ringOpacity, { toValue: 0.6, duration: 80, useNativeDriver: true }),
         Animated.timing(b.ringScale, { toValue: 1.6, duration: 260, useNativeDriver: true }),
         Animated.timing(b.ringOpacity, { toValue: 0, duration: 140, useNativeDriver: true }),
       ]),
+      Animated.timing(b.opacity, { toValue: 0, duration: 140, useNativeDriver: true }),
     ]).start(() => b.__respawn?.());
   };
 
   const hour = new Date().getHours();
   const isNight = hour >= 20 || hour < 6;
 
-  /** ---------- Bubble Gun (ALL state changes deferred to RAF) ---------- */
-  const EMIT_EVERY_MS = 80;
+  /** ---------- Bubble Gun (long-press) ---------- */
+  const GUN_INTERVAL_MS = 110;
   const GUN_SFX_PROB = 0.15;
-  const MAX_ACTIVE_SHOTS = 28;
 
   const [shots, setShots] = useState([]);
   const gunActiveRef = useRef(false);
   const fingerRef = useRef({ x: width / 2, y: height / 2 });
-  const lastEmitAtRef = useRef(0);
-  const rafRef = useRef(null);
+  const gunTimerRef = useRef(null);
   const lastShotSfxAtRef = useRef(0);
-  const forceImmediateRef = useRef(false); // request instant emit next RAF
-  const speedRef = useRef(0);              // computed in moveGun, used by RAF for bonuses
 
   const spawnShot = (x, y) => {
+    // small-ish bubbles, random tint, rare sticker
     const size = rand(36, 58);
     const tx = new Animated.Value(x - size / 2);
     const ty = new Animated.Value(y - size / 2);
@@ -586,26 +558,21 @@ export default function BubbleScene() {
     const tint = TINTS[rint(0, TINTS.length - 1)];
     const sticker = Math.random() < 0.06 ? STICKERS[rint(0, STICKERS.length - 1)] : null;
 
+    // upward-ish drift with a bit of sideways randomness
     const heading = UP_BIAS + rand(-Math.PI / 6, Math.PI / 6);
     const dist = rand(90, 170);
     const nx = clamp(x + Math.cos(heading) * dist - size / 2, 0, Math.max(0, width - size));
     const ny = clamp(y + Math.sin(heading) * dist - size / 2, 0, Math.max(0, height - size));
-    const duration = rint(850, 1400);
+    const duration = rand(850, 1400);
 
-    // Defer state update off any insertion phase
-    requestAnimationFrame(() => {
-      setShots((prev) => {
-        const next = [...prev, { id, size, tx, ty, scale, opacity, ringScale, ringOpacity, tint, sticker }];
-        if (next.length > MAX_ACTIVE_SHOTS) next.splice(0, next.length - MAX_ACTIVE_SHOTS);
-        return next;
-      });
-    });
+    setShots((prev) => [...prev, { id, size, tx, ty, scale, opacity, ringScale, ringOpacity, tint, sticker }]);
 
     Animated.parallel([
       Animated.timing(tx, { toValue: nx, duration, easing: Easing.out(Easing.quad), useNativeDriver: true }),
       Animated.timing(ty, { toValue: ny, duration, easing: Easing.out(Easing.quad), useNativeDriver: true }),
       Animated.timing(scale, { toValue: 1, duration: 220, easing: Easing.out(Easing.quad), useNativeDriver: true }),
     ]).start(() => {
+      // small poof & fade
       Animated.parallel([
         Animated.sequence([
           Animated.timing(ringOpacity, { toValue: 0.45, duration: 80, useNativeDriver: true }),
@@ -614,12 +581,15 @@ export default function BubbleScene() {
         ]),
         Animated.timing(opacity, { toValue: 0, duration: 160, useNativeDriver: true }),
       ]).start(() => {
-        // Defer removal as well
-        requestAnimationFrame(() => {
-          setShots((prev) => prev.filter((s) => s.id !== id));
+        // Defer removal out of commit phase
+        InteractionManager.runAfterInteractions(() => {
+          requestAnimationFrame(() => {
+            setShots((prev) => prev.filter((s) => s.id !== id));
+          });
         });
       });
 
+      // throttle shot sfx
       const now = Date.now();
       if (Math.random() < GUN_SFX_PROB && now - lastShotSfxAtRef.current > 500) {
         lastShotSfxAtRef.current = now;
@@ -628,82 +598,51 @@ export default function BubbleScene() {
     });
   };
 
-  const rafLoop = () => {
-    if (!gunActiveRef.current) return;
-    const now = Date.now();
-
-    if (forceImmediateRef.current || (now - lastEmitAtRef.current >= EMIT_EVERY_MS)) {
-      lastEmitAtRef.current = now;
-      forceImmediateRef.current = false;
-
-      const { x, y } = fingerRef.current;
-      spawnShot(x, y);
-
-      // simple bonus when moving fast: emit a second shot
-      if (speedRef.current > 1.2) {
-        spawnShot(
-          clamp(x + rand(-10, 10), 0, width),
-          clamp(y + rand(-10, 10), 0, height)
-        );
-      }
-    }
-
-    rafRef.current = requestAnimationFrame(rafLoop);
-  };
-
   const startGun = (x, y) => {
-    // **No setState here**
     gunActiveRef.current = true;
     fingerRef.current = { x, y };
-    lastEmitAtRef.current = 0;
-    forceImmediateRef.current = true; // get one right away on next frame
-
-    if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    rafRef.current = requestAnimationFrame(rafLoop);
+    if (gunTimerRef.current) clearInterval(gunTimerRef.current);
+    gunTimerRef.current = setInterval(() => {
+      const { x: fx, y: fy } = fingerRef.current;
+      spawnShot(fx, fy);
+    }, GUN_INTERVAL_MS);
   };
 
   const moveGun = (x, y) => {
-    // **No setState here**
-    const prev = fingerRef.current;
-    const dt = Math.max(1, Date.now() - (moveGun._lastT || 0));
-    const v = Math.hypot(x - prev.x, y - prev.y) / dt;
-    speedRef.current = v;
-    moveGun._lastT = Date.now();
     fingerRef.current = { x, y };
   };
 
   const stopGun = () => {
     gunActiveRef.current = false;
-    speedRef.current = 0;
-    if (rafRef.current) {
-      cancelAnimationFrame(rafRef.current);
-      rafRef.current = null;
+    if (gunTimerRef.current) {
+      clearInterval(gunTimerRef.current);
+      gunTimerRef.current = null;
     }
   };
 
-  // Long press + pan gesture on JS thread; callbacks only touch refs.
+  // Clean up gun timer on unmount
+  useEffect(() => {
+    return () => stopGun();
+  }, []);
+
+  // Long press + pan gesture (bridge to JS with runOnJS)
   const longPress = Gesture.LongPress()
-    .runOnJS(true)
-    .minDuration(200)
-    .maxDistance(9999)
-    .shouldCancelWhenOutside(false)
-    .onStart((e) => startGun(e.x, e.y))
-    .onEnd(() => stopGun())
-    .onFinalize(() => stopGun());
+    .minDuration(250)
+    .onStart((e) => runOnJS(startGun)(e.x, e.y))
+    .onEnd(() => runOnJS(stopGun)())
+    .onFinalize(() => runOnJS(stopGun)());
 
   const pan = Gesture.Pan()
-    .runOnJS(true)
-    .shouldCancelWhenOutside(false)
-    .onBegin((e) => moveGun(e.x, e.y))
-    .onUpdate((e) => moveGun(e.x, e.y))
-    .onEnd(() => stopGun())
-    .onFinalize(() => stopGun());
+    .onBegin((e) => runOnJS(moveGun)(e.x, e.y))
+    .onUpdate((e) => runOnJS(moveGun)(e.x, e.y))
+    .onEnd(() => runOnJS(stopGun)())
+    .onFinalize(() => runOnJS(stopGun)());
 
   const gesture = Gesture.Simultaneous(longPress, pan);
 
   return (
     <GestureDetector gesture={gesture}>
-      <View style={[styles.container, { backgroundColor: skyColor }]} removeClippedSubviews>
+      <View style={[styles.container, { backgroundColor: skyColor }]}>
         <MusicManager />
 
         {/* Clouds background (behind bubbles) with tilt parallax */}
@@ -715,13 +654,31 @@ export default function BubbleScene() {
           isNight={isNight}
         />
 
-        {/* Gun shots (passive layer) */}
+        {/* Gun shots (rendered under main bubbles; passive) */}
         <ShotsLayer shots={shots} />
 
-        {/* Main drifting bubbles */}
-        <BubblesLayer bubbles={bubbles} tiltX={tiltX} tiltY={tiltY} />
+        {/* Main drifting bubbles with tilt parallax */}
+        {bubbles.map((b) => {
+          const txWithTilt = Animated.add(b.tx, Animated.multiply(tiltX, b.parallax));
+          const tyWithTilt = Animated.add(b.ty, Animated.multiply(tiltY, b.parallax * 0.8));
+          return (
+            <Bubble
+              key={b.id}
+              size={b.size}
+              tx={txWithTilt}
+              ty={tyWithTilt}
+              scale={b.scale}
+              opacity={b.opacity}
+              ringScale={b.ringScale}
+              ringOpacity={b.ringOpacity}
+              tint={b.tint}
+              sticker={b.sticker}
+              onPop={() => handleManualPop(b)}
+            />
+          );
+        })}
 
-        {/* Centered Yay badge OVERLAY */}
+        {/* Centered Yay badge OVERLAY (on top) */}
         <Animated.View
           pointerEvents="none"
           style={[
@@ -729,7 +686,7 @@ export default function BubbleScene() {
             { opacity: badgeOpacity, transform: [{ scale: badgeScale }] },
           ]}
         >
-          <Text style={styles.badgeText}>⭐ Yay!</Text>
+          <Text style={styles.badgeText}>⭐ You did it!</Text>
         </Animated.View>
 
         <ParentalLock onUnlock={() => navigation.navigate('ParentalArea')} />
@@ -774,12 +731,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.85)',
   },
 });
-
-
-
-
-
-
 
 
 

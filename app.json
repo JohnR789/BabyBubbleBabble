@@ -3,6 +3,14 @@
     "name": "BabyBubbleBabble",
     "slug": "babybubblebabble",
     "scheme": "babybubblebabble",
-    "android": { "package": "com.anonymous.babybubblebabble" }
+    "android": {
+      "package": "com.anonymous.babybubblebabble"
+    },
+    "plugins": [
+      "expo-font"
+    ],
+    "ios": {
+      "bundleIdentifier": "com.anonymous.babybubblebabble"
+    }
   }
 }
