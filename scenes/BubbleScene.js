@@ -68,27 +68,34 @@ const STICKERS = [
 const TINTS = ['#9bd7ff', '#ffd7f2', '#ffe1a6', '#c9ffd2', '#e6ddff'];
 
 // Combo reward tuning
-const COMBO_WINDOW_MS = 1200;    // time between pops to continue combo
-const COMBO_THRESHOLD  = 3;      // pops needed to trigger reward
-const BOOST_MULTIPLIER = 1.25;   // speed boost during reward
-const BOOST_DURATION_MS = 2500;  // how long the boost/badge last
+const COMBO_WINDOW_MS = 1200;
+const COMBO_THRESHOLD  = 3;
+const BOOST_MULTIPLIER = 1.25;
+const BOOST_DURATION_MS = 2500;
+
+/** ---------- Jackpot gold + confetti ---------- */
+const GOLD_TINT = '#ffd24a';
+
+// Dev helper toggle (unused in prod but handy when testing)
+const DEV_MORE_JACKPOTS = false;
+// Lower probability (2%). Flip DEV_MORE_JACKPOTS to true to temporarily boost to 20% while testing.
+const JACKPOT_PROB = DEV_MORE_JACKPOTS ? 0.20 : 0.02;
 
 /** ---------- Cloud background tunables ---------- */
-const CLOUD_MIN_W = 140;   // px
+const CLOUD_MIN_W = 140;
 const CLOUD_MAX_W = 280;
-const CLOUD_MIN_SPD = 8;   // px/sec (horizontal drift)
+const CLOUD_MIN_SPD = 8;
 const CLOUD_MAX_SPD = 16;
-const CLOUD_ROWS = 5;      // how many vertical bands clouds can occupy
+const CLOUD_ROWS = 5;
 const CLOUD_OPACITY_MIN = 0.18;
 const CLOUD_OPACITY_MAX = 0.33;
 
 /** ---------- Time-of-day sky ---------- */
 function skyColorForHour(h) {
-  // night → morning → day → evening
-  if (h >= 20 || h < 6)   return '#172b44'; // night navy
-  if (h < 10)             return '#cfe9ff'; // morning soft blue
-  if (h < 17)             return '#bfe4ff'; // day bright blue
-  return '#ffd8b0';                          // evening peach
+  if (h >= 20 || h < 6)   return '#172b44';
+  if (h < 10)             return '#cfe9ff';
+  if (h < 17)             return '#bfe4ff';
+  return '#ffd8b0';
 }
 
 /** ---------- Helpers ---------- */
@@ -141,7 +148,7 @@ function CloudsBackground({ width, height, tiltX, tiltY, isNight }) {
       const opacity = isNight ? opacityBase * 0.85 : opacityBase;
       const startX = dir === 1 ? -cw - rand(0, width * 0.6) : width + rand(0, width * 0.6);
       const endX   = dir === 1 ? width + cw : -cw;
-      const parallax = 0.6 + (band / (rows - 1 || 1)) * 1.0; // 0.6..~1.6
+      const parallax = 0.6 + (band / (rows - 1 || 1)) * 1.0;
       return {
         id: `cloud-${i}-${cw.toFixed(0)}`,
         cw, ch, y, speed, opacity, startX, endX, parallax,
@@ -310,6 +317,36 @@ export default function BubbleScene() {
   const sizeGlobalMin = TYPES.SMALL.SIZE_MIN;
   const sizeGlobalMax = TYPES.LARGE.SIZE_MAX;
 
+  /** ---------- Confetti (for jackpots) ---------- */
+  const [confetti, setConfetti] = useState([]);
+  function sprayConfetti(cx, cy, count = 12) {
+    const items = Array.from({ length: count }).map((_, i) => {
+      const id = `conf-${Date.now()}-${i}`;
+      const angle = Math.random() * Math.PI * 2;
+      const dist = 40 + Math.random() * 50;
+      const tx = new Animated.Value(cx);
+      const ty = new Animated.Value(cy);
+      const opacity = new Animated.Value(1);
+      const duration = 500 + Math.random() * 450;
+
+      Animated.parallel([
+        Animated.timing(tx, { toValue: cx + Math.cos(angle) * dist, duration, useNativeDriver: true, easing: Easing.out(Easing.cubic) }),
+        Animated.timing(ty, { toValue: cy + Math.sin(angle) * dist, duration, useNativeDriver: true, easing: Easing.out(Easing.cubic) }),
+        Animated.timing(opacity, { toValue: 0, duration: duration + 150, useNativeDriver: true, easing: Easing.linear }),
+      ]).start(() => {
+        InteractionManager.runAfterInteractions(() => {
+          requestAnimationFrame(() => {
+            setConfetti((prev) => prev.filter((c) => c.id !== id));
+          });
+        });
+      });
+
+      return { id, tx, ty, opacity, size: 6 + Math.random() * 6, tint: TINTS[rint(0, TINTS.length - 1)] };
+    });
+
+    setConfetti((prev) => [...prev, ...items]);
+  }
+
   // Main drifting bubbles
   const bubbles = useMemo(() => {
     return Array.from({ length: bubbleCount }).map(() => {
@@ -317,44 +354,47 @@ export default function BubbleScene() {
       const T = TYPES[typeKey];
       const size = rand(T.SIZE_MIN, T.SIZE_MAX);
 
-      const tx = new Animated.Value(0);
-      const ty = new Animated.Value(0);
-      const scale = new Animated.Value(1);
-      const opacity = new Animated.Value(1);
-      const ringScale = new Animated.Value(0.8);
-      const ringOpacity = new Animated.Value(0);
-
       const curr = { x: 0, y: 0 };
 
       const sizeRatio = (T.SIZE_MAX - size) / (T.SIZE_MAX - T.SIZE_MIN + 0.0001);
       const baseSpeed = rand(SPEED_MIN_BASE, SPEED_MAX_BASE);
-      const speed = baseSpeed * (0.85 + sizeRatio * 0.45); // small faster, large slower
+      const speed = baseSpeed * (0.85 + sizeRatio * 0.45);
       const maxTurn = MAX_TURN_BASE * (0.9 + 0.9 * sizeRatio);
       const legFactor = 1.1 - 0.4 * sizeRatio;
       const legMin = LEG_MIN_BASE * legFactor;
       const legMax = LEG_MAX_BASE * legFactor;
       const biasGain = 0.05 + (1 - sizeRatio) * 0.02;
-
       const heading = UP_BIAS + rand(-Math.PI / 14, Math.PI / 14);
 
-      const tint = TINTS[rint(0, TINTS.length - 1)];
+      // Decide jackpot FIRST so we can set initial ring visibility
+      const baseTint = TINTS[rint(0, TINTS.length - 1)];
+      const isJackpot = Math.random() < JACKPOT_PROB;
+      const tint = isJackpot ? GOLD_TINT : baseTint;
+
+      // Anim values (ring visible for gold)
+      const tx = new Animated.Value(0);
+      const ty = new Animated.Value(0);
+      const scale = new Animated.Value(1);
+      const opacity = new Animated.Value(1);
+      const ringScale = new Animated.Value(isJackpot ? 1.05 : 0.8);
+      const ringOpacity = new Animated.Value(isJackpot ? 0.45 : 0);
+
       const sticker = Math.random() < STICKER_PROB ? STICKERS[rint(0, STICKERS.length - 1)] : null;
-
       const touchPadding = size >= 112 ? 36 : size >= 86 ? 28 : 20;
-
-      const parallax = 0.35 + ((size - sizeGlobalMin) / (sizeGlobalMax - sizeGlobalMin)) * 0.85; // 0.35..~1.2
+      const parallax = 0.35 + ((size - sizeGlobalMin) / (sizeGlobalMax - sizeGlobalMin)) * 0.85;
 
       return {
         id: Math.random().toString(36).slice(2),
         typeKey, size, tx, ty, scale, opacity, ringScale, ringOpacity,
         curr, speed, maxTurn, legMin, legMax, biasGain, heading,
         tint, sticker, touchPadding, parallax,
+        isJackpot,
         anim: null,
         stopped: false,
         ttlTimer: null,
       };
     });
-  }, [bubbleCount]);
+  }, [bubbleCount, sizeGlobalMin, sizeGlobalMax]);
 
   useEffect(() => {
     const stopFns = [];
@@ -474,11 +514,15 @@ export default function BubbleScene() {
       b.size = rand(T.SIZE_MIN, T.SIZE_MAX);
       b.scale.setValue(1);
       b.opacity.setValue(1);
-      b.ringScale.setValue(0.8);
-      b.ringOpacity.setValue(0);
       b.heading = UP_BIAS + rand(-Math.PI / 14, Math.PI / 14);
-      b.tint = TINTS[rint(0, TINTS.length - 1)];
+      const baseTint = TINTS[rint(0, TINTS.length - 1)];
+      b.isJackpot = Math.random() < JACKPOT_PROB;
+      b.tint = b.isJackpot ? GOLD_TINT : baseTint;
+      // make gold obvious between pops
+      b.ringScale.setValue(b.isJackpot ? 1.05 : 0.8);
+      b.ringOpacity.setValue(b.isJackpot ? 0.45 : 0);
       b.sticker = Math.random() < STICKER_PROB ? STICKERS[rint(0, STICKERS.length - 1)] : null;
+      b.ringOpacity.stopAnimation(); // ensure no lingering anims
       placeAndRun(b, bubbles);
     };
 
@@ -518,6 +562,14 @@ export default function BubbleScene() {
     b.__stopAll?.();
     playManualPopSfx();
     registerPop();
+
+    // Confetti reward if jackpot
+    if (b.isJackpot) {
+      const cx = b.curr.x + b.size / 2;
+      const cy = b.curr.y + b.size / 2;
+      sprayConfetti(cx, cy, 18);
+    }
+
     Animated.parallel([
       Animated.sequence([
         Animated.timing(b.scale, { toValue: 1.15, duration: 110, useNativeDriver: true }),
@@ -545,7 +597,6 @@ export default function BubbleScene() {
   const lastShotSfxAtRef = useRef(0);
 
   const spawnShot = (x, y) => {
-    // small-ish bubbles, random tint, rare sticker
     const size = rand(36, 58);
     const tx = new Animated.Value(x - size / 2);
     const ty = new Animated.Value(y - size / 2);
@@ -558,7 +609,6 @@ export default function BubbleScene() {
     const tint = TINTS[rint(0, TINTS.length - 1)];
     const sticker = Math.random() < 0.06 ? STICKERS[rint(0, STICKERS.length - 1)] : null;
 
-    // upward-ish drift with a bit of sideways randomness
     const heading = UP_BIAS + rand(-Math.PI / 6, Math.PI / 6);
     const dist = rand(90, 170);
     const nx = clamp(x + Math.cos(heading) * dist - size / 2, 0, Math.max(0, width - size));
@@ -572,7 +622,6 @@ export default function BubbleScene() {
       Animated.timing(ty, { toValue: ny, duration, easing: Easing.out(Easing.quad), useNativeDriver: true }),
       Animated.timing(scale, { toValue: 1, duration: 220, easing: Easing.out(Easing.quad), useNativeDriver: true }),
     ]).start(() => {
-      // small poof & fade
       Animated.parallel([
         Animated.sequence([
           Animated.timing(ringOpacity, { toValue: 0.45, duration: 80, useNativeDriver: true }),
@@ -581,7 +630,6 @@ export default function BubbleScene() {
         ]),
         Animated.timing(opacity, { toValue: 0, duration: 160, useNativeDriver: true }),
       ]).start(() => {
-        // Defer removal out of commit phase
         InteractionManager.runAfterInteractions(() => {
           requestAnimationFrame(() => {
             setShots((prev) => prev.filter((s) => s.id !== id));
@@ -589,7 +637,6 @@ export default function BubbleScene() {
         });
       });
 
-      // throttle shot sfx
       const now = Date.now();
       if (Math.random() < GUN_SFX_PROB && now - lastShotSfxAtRef.current > 500) {
         lastShotSfxAtRef.current = now;
@@ -620,7 +667,6 @@ export default function BubbleScene() {
     }
   };
 
-  // Clean up gun timer on unmount
   useEffect(() => {
     return () => stopGun();
   }, []);
@@ -678,6 +724,26 @@ export default function BubbleScene() {
           );
         })}
 
+        {/* Confetti overlay */}
+        {confetti.map((c) => {
+          const style = {
+            position: 'absolute',
+            width: c.size,
+            height: c.size,
+            borderRadius: 2,
+            backgroundColor: c.tint,
+            transform: [{ translateX: c.tx }, { translateY: c.ty }],
+            opacity: c.opacity,
+          };
+          return (
+            <Animated.View
+              key={c.id}
+              pointerEvents="none"
+              style={style}
+            />
+          );
+        })}
+
         {/* Centered Yay badge OVERLAY (on top) */}
         <Animated.View
           pointerEvents="none"
@@ -731,9 +797,4 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.85)',
   },
 });
-
-
-
-
-
 
