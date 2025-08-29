@@ -2,7 +2,7 @@ import { useEffect, useContext, useRef } from 'react';
 import { Audio } from 'expo-av';
 import { SettingsContext } from '../SettingsContext';
 
-// Preload all 10 lullaby files
+// Keep your existing imports:
 const lullabies = [
   require('../assets/sounds/music/TinyToes.mp3'),
   require('../assets/sounds/music/SunnyDays.mp3'),
@@ -17,57 +17,51 @@ const lullabies = [
 ];
 
 export default function MusicManager() {
-  const { musicOn } = useContext(SettingsContext);
+  const ctx = useContext(SettingsContext);
+  const musicOn = ctx?.musicOn ?? false;
+
   const musicRef = useRef(null);
   const currentIndexRef = useRef(0);
 
-  useEffect(() => {
-    // Cleanup function to unload sound
-    async function cleanup() {
-      if (musicRef.current) {
-        try {
-          await musicRef.current.stopAsync();
-          await musicRef.current.unloadAsync();
-          musicRef.current = null;
-        } catch (e) {
-          // Ignore cleanup errors
-        }
-      }
-    }
-
-    // Play the lullaby at current index and set up onPlaybackStatusUpdate
-    async function playLullaby(index) {
-      await cleanup();
-
-      const sound = new Audio.Sound();
+  async function cleanup() {
+    if (musicRef.current) {
       try {
-        await sound.loadAsync(lullabies[index]);
-        musicRef.current = sound;
-
-        sound.setOnPlaybackStatusUpdate((status) => {
-          if (status.didJustFinish && musicOn) {
-            // Play next lullaby, loop back to 0 after last
-            currentIndexRef.current = (index + 1) % lullabies.length;
-            playLullaby(currentIndexRef.current);
-          }
-        });
-
-        await sound.playAsync();
-      } catch (error) {
-        console.log('Failed to load/play lullaby:', error);
-      }
+        await musicRef.current.stopAsync();
+        await musicRef.current.unloadAsync();
+      } catch {}
+      musicRef.current = null;
     }
+  }
 
+  async function playIndex(i) {
+    await cleanup();
+    const sound = new Audio.Sound();
+    try {
+      await sound.loadAsync(lullabies[i]);
+      musicRef.current = sound;
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.didJustFinish && musicOn) {
+          currentIndexRef.current = (i + 1) % lullabies.length;
+          playIndex(currentIndexRef.current);
+        }
+      });
+      await sound.playAsync();
+    } catch (error) {
+      // silent fail is fine for UX here
+    }
+  }
+
+  useEffect(() => {
     if (musicOn) {
-      playLullaby(currentIndexRef.current);
+      // randomize the FIRST track on every mount / toggle-on
+      currentIndexRef.current = Math.floor(Math.random() * lullabies.length);
+      playIndex(currentIndexRef.current);
     } else {
       cleanup();
     }
-
-    return () => {
-      cleanup();
-    };
+    return () => { cleanup(); };
   }, [musicOn]);
 
   return null;
 }
+
