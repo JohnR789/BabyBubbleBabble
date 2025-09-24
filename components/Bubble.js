@@ -15,7 +15,12 @@ export default function Bubble({
   sticker,     // optional require('...png')
 }) {
   return (
-    <TouchableWithoutFeedback onPress={onPop} accessibilityRole="button" accessibilityLabel="bubble">
+    <TouchableWithoutFeedback
+      onPress={onPop}
+      accessibilityRole="button"
+      accessibilityLabel="bubble"
+      hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+    >
       <Animated.View
         style={{
           position: 'absolute',
@@ -27,7 +32,14 @@ export default function Bubble({
         pointerEvents="auto"
       >
         {/* subtle tinted aura */}
-        {tint ? <View style={[styles.aura, { backgroundColor: hexToRgba(tint, 0.08), width: size, height: size, borderRadius: size/2 }]} /> : null}
+        {tint ? (
+          <View
+            style={[
+              styles.aura,
+              { backgroundColor: hexToRgba(tint, 0.08), width: size, height: size, borderRadius: size / 2 },
+            ]}
+          />
+        ) : null}
 
         {/* pop ring */}
         <Animated.View
@@ -83,7 +95,6 @@ const styles = StyleSheet.create({
   },
 });
 
-// small helper (kept local to avoid deps)
 function hexToRgba(hex, alpha = 1) {
   const c = hex.replace('#', '');
   const bigint = parseInt(c.length === 3 ? c.split('').map(x => x + x).join('') : c, 16);
@@ -92,8 +103,6 @@ function hexToRgba(hex, alpha = 1) {
   const b = bigint & 255;
   return `rgba(${r},${g},${b},${alpha})`;
 }
-
-
 
 
 
