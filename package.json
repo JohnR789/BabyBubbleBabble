@@ -35,7 +35,7 @@
     "react-test-renderer": "19.0.0",
     "typescript": "~5.9.2"
   },
-  "name": "BabyBubbleBabble",
+  "name": "babybubblebabble",
   "version": "1.0.0",
   "scripts": {
     "android": "expo run:android",
