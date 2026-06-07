@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 
 type Nav = { navigate: (route: string) => void };
 export default function Home({ navigation }: { navigation: Nav }) {

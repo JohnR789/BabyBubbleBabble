@@ -14,4 +14,12 @@ android/.gradle/
 android/app/build/
 ios/Pods/
 
+# Ruby / CocoaPods vendored bundle (installed locally, never committed)
+vendor/bundle/
+vendor__DISABLED/
+
+# Build logs and stray backups
+*.log
+*.bak
+
 .fake

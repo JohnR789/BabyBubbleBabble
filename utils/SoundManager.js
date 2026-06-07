@@ -15,11 +15,11 @@ const SOURCES = {
 };
 
 const animalSounds = {
-  duck_quack:  require('../assets/sounds/animal_sounds/duck.mp3'),
-  sheep_baa:   require('../assets/sounds/animal_sounds/sheep.wav'),
-  frog_ribbit: require('../assets/sounds/animal_sounds/frog.mp3'),
-  horse:       require('../assets/sounds/animal_sounds/horse.wav'),
-  cow:         require('../assets/sounds/animal_sounds/cow.wav'),
+  duck:  require('../assets/sounds/animal_sounds/duck.mp3'),
+  sheep: require('../assets/sounds/animal_sounds/sheep.wav'),
+  frog:  require('../assets/sounds/animal_sounds/frog.mp3'),
+  horse: require('../assets/sounds/animal_sounds/horse.wav'),
+  cow:   require('../assets/sounds/animal_sounds/cow.wav'),
 };
 
 /* ------------------------------------------------------------------ */
