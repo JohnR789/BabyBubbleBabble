@@ -1,22 +1,45 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
 
-export default function ParentalLock({ onUnlock }) {
-  const [count, setCount] = useState(0);
+const TAPS_TO_UNLOCK = 5;
+const RESET_MS = 2500;
 
-  function handlePress() {
-    if (count >= 4) {
-      setCount(0);
-      onUnlock();
-    } else {
-      setCount(count + 1);
-      setTimeout(() => setCount(0), 2500); // Reset after 2.5s
+export default function ParentalLock({ onUnlock }) {
+  const countRef = useRef(0);
+  const resetTimer = useRef(null);
+
+  function clearReset() {
+    if (resetTimer.current) {
+      clearTimeout(resetTimer.current);
+      resetTimer.current = null;
     }
   }
 
+  useEffect(() => clearReset, []);
+
+  function handlePress() {
+    clearReset();
+    const next = countRef.current + 1;
+    if (next >= TAPS_TO_UNLOCK) {
+      countRef.current = 0;
+      onUnlock();
+      return;
+    }
+    countRef.current = next;
+    resetTimer.current = setTimeout(() => {
+      countRef.current = 0;
+      resetTimer.current = null;
+    }, RESET_MS);
+  }
+
   return (
-    <TouchableOpacity style={styles.lockArea} onPress={handlePress}>
-      <Text style={styles.text}>Parental Area (Tap 5x)</Text>
+    <TouchableOpacity
+      style={styles.lockArea}
+      onPress={handlePress}
+      accessibilityRole="button"
+      accessibilityLabel={`Parental area, tap ${TAPS_TO_UNLOCK} times to unlock`}
+    >
+      <Text style={styles.text}>{`Parental Area (Tap ${TAPS_TO_UNLOCK}x)`}</Text>
     </TouchableOpacity>
   );
 }

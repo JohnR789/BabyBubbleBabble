@@ -347,18 +347,21 @@ function HyperRealBackdrop({ width, height, t, tiltX, tiltY, reducedMotion }) {
 
 /** --------------------------- Milky Way (night) -------------------- */
 function MilkyWayLayer({ width, height, isNight, tiltX, tiltY, reducedMotion }) {
-  if (!isNight || !(ExpoImage && HAS_EXPO_IMAGE) || !SHOW_MILKY_WAY) return null;
-  const AnimatedExpoImage = Animated.createAnimatedComponent(ExpoImage);
+  const visible = isNight && !!(ExpoImage && HAS_EXPO_IMAGE) && SHOW_MILKY_WAY;
 
   const drift = useRef(new Animated.Value(0)).current;
   useEffect(() => {
+    if (!visible) return undefined;
     drift.setValue(0);
     const loop = Animated.loop(
       Animated.timing(drift, { toValue: 1, duration: reducedMotion ? 160000 : 110000, easing: Easing.linear, useNativeDriver: true })
     );
     loop.start();
     return () => loop.stop();
-  }, [drift, reducedMotion]);
+  }, [drift, reducedMotion, visible]);
+
+  if (!visible) return null;
+  const AnimatedExpoImage = Animated.createAnimatedComponent(ExpoImage);
 
   const rot = drift.interpolate({ inputRange: [0, 1], outputRange: ['-5deg', '5deg'] });
   const parallaxX = tiltX ? Animated.multiply(tiltX, 0.25) : 0;
