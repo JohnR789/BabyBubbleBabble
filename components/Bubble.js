@@ -97,10 +97,10 @@ const styles = StyleSheet.create({
 
 function hexToRgba(hex, alpha = 1) {
   const c = hex.replace('#', '');
-  const bigint = parseInt(c.length === 3 ? c.split('').map(x => x + x).join('') : c, 16);
-  const r = (bigint >> 16) & 255;
-  const g = (bigint >> 8) & 255;
-  const b = bigint & 255;
+  const normalized = c.length === 3 ? c.split('').map((x) => x + x).join('') : c;
+  const r = parseInt(normalized.substring(0, 2), 16);
+  const g = parseInt(normalized.substring(2, 4), 16);
+  const b = parseInt(normalized.substring(4, 6), 16);
   return `rgba(${r},${g},${b},${alpha})`;
 }
 

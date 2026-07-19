@@ -1,10 +1,11 @@
 import React, { useEffect, useRef } from 'react';
 import { TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../theme';
 
 const TAPS_TO_UNLOCK = 5;
 const RESET_MS = 2500;
 
-export default function ParentalLock({ onUnlock }) {
+export default function ParentalLock({ onUnlock, style = {}, label = '' }) {
   const countRef = useRef(0);
   const resetTimer = useRef(null);
 
@@ -34,30 +35,26 @@ export default function ParentalLock({ onUnlock }) {
 
   return (
     <TouchableOpacity
-      style={styles.lockArea}
+      style={[styles.lockArea, style]}
       onPress={handlePress}
       accessibilityRole="button"
       accessibilityLabel={`Parental area, tap ${TAPS_TO_UNLOCK} times to unlock`}
     >
-      <Text style={styles.text}>{`Parental Area (Tap ${TAPS_TO_UNLOCK}x)`}</Text>
+      <Text style={styles.text}>{label || `Parental Area (Tap ${TAPS_TO_UNLOCK}x)`}</Text>
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   lockArea: {
-    position: 'absolute',
-    bottom: 30,
-    right: 18,
-    padding: 10,
+    padding: SPACING.md,
     backgroundColor: 'rgba(0,0,0,0.18)',
-    borderRadius: 18,
-    zIndex: 99,
+    borderRadius: RADIUS.lg,
   },
   text: {
-    color: 'white',
-    fontSize: 13,
+    color: COLORS.textInverse,
+    fontSize: TYPOGRAPHY.sizes.small,
     textAlign: 'center',
-    fontWeight: '500',
+    fontWeight: TYPOGRAPHY.weights.medium,
   },
 });

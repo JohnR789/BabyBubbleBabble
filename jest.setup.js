@@ -31,6 +31,16 @@ jest.mock('expo-av', () => {
   };
 });
 
+// AsyncStorage has no native module under Node; mock it so settings load instantly.
+jest.mock('@react-native-async-storage/async-storage', () => ({
+  __esModule: true,
+  default: {
+    getItem: jest.fn(async () => null),
+    setItem: jest.fn(async () => {}),
+    removeItem: jest.fn(async () => {}),
+  },
+}));
+
 // Optional native add-ons that scenes load defensively; keep them quiet in tests.
 jest.mock('expo-haptics', () => ({}), { virtual: true });
 jest.mock('expo-sensors', () => ({ Accelerometer: { addListener: () => ({ remove() {} }), setUpdateInterval: () => {} } }), { virtual: true });

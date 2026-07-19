@@ -1,8 +1,8 @@
-// utils/MusicManager.js
-import { useEffect, useRef, useContext } from 'react';
-import { AppState, Platform } from 'react-native';
+import { useEffect, useRef, useContext, useCallback } from 'react';
+import { AppState } from 'react-native';
 import { Audio } from 'expo-av';
 import { SettingsContext } from '../SettingsContext';
+import { SOUNDS } from '../assets';
 import { ensureAudioMode } from './SoundManager';
 
 /** Toggle local debugging (kept false to silence logs) */
@@ -10,16 +10,16 @@ const DEBUG_MUSIC = false;
 const makeLogger = (flag) => (...a) => { if (flag) console.log('[Music]', ...a); };
 
 const lullabies = [
-  require('../assets/sounds/music/TinyToes.mp3'),
-  require('../assets/sounds/music/SunnyDays.mp3'),
-  require('../assets/sounds/music/SunnyDayParade.mp3'),
-  require('../assets/sounds/music/TwinkleTickleToes.mp3'),
-  require('../assets/sounds/music/HappyDayParade.mp3'),
-  require('../assets/sounds/music/TwinkleToes.mp3'),
-  require('../assets/sounds/music/SunnyDaysandSillyWays.mp3'),
-  require('../assets/sounds/music/SkippingDreams.mp3'),
-  require('../assets/sounds/music/BubbleBounce.mp3'),
-  require('../assets/sounds/music/QuackQuackPlaytime.mp3'),
+  SOUNDS.music.TinyToes,
+  SOUNDS.music.SunnyDays,
+  SOUNDS.music.SunnyDayParade,
+  SOUNDS.music.TwinkleTickleToes,
+  SOUNDS.music.HappyDayParade,
+  SOUNDS.music.TwinkleToes,
+  SOUNDS.music.SunnyDaysandSillyWays,
+  SOUNDS.music.SkippingDreams,
+  SOUNDS.music.BubbleBounce,
+  SOUNDS.music.QuackQuackPlaytime,
 ];
 
 export default function MusicManager({ forceOn, volume = 0.6, log = false }) {
@@ -28,13 +28,13 @@ export default function MusicManager({ forceOn, volume = 0.6, log = false }) {
 
   const mlog = makeLogger(DEBUG_MUSIC || log);
 
-  const soundRef = useRef(null);          // Audio.Sound | null
-  const indexRef = useRef(0);             // current track index
-  const mountedRef = useRef(true);        // component mounted flag
+  const soundRef = useRef(null);
+  const indexRef = useRef(0);
+  const mountedRef = useRef(true);
   const appStateRef = useRef(AppState.currentState);
-  const switchingRef = useRef(false);     // guards next-track reentry
+  const switchingRef = useRef(false);
 
-  async function cleanup() {
+  const cleanup = useCallback(async () => {
     const s = soundRef.current;
     soundRef.current = null;
     if (s) {
@@ -42,11 +42,11 @@ export default function MusicManager({ forceOn, volume = 0.6, log = false }) {
       try { await s.stopAsync(); } catch {}
       try { await s.unloadAsync(); } catch {}
     }
-  }
+  }, []);
 
-  const nextIndex = (i) => (i + 1) % lullabies.length;
+  const nextIndex = useCallback((i) => (i + 1) % lullabies.length, []);
 
-  async function loadAndPlay(i) {
+  const loadAndPlay = useCallback(async (i) => {
     if (!mountedRef.current || !musicOn) return;
     if (switchingRef.current) return;
     switchingRef.current = true;
@@ -58,17 +58,15 @@ export default function MusicManager({ forceOn, volume = 0.6, log = false }) {
 
     s.setOnPlaybackStatusUpdate((status) => {
       if (!mountedRef.current) return;
-      // Keep logs quiet in production; toggle DEBUG_MUSIC/log to see details.
       if (!status.isLoaded) {
-        // If a file fails, skip ahead gracefully
         if (status.error) {
           mlog('status error; advancing', status.error);
-          void loadAndPlay(nextIndex(indexRef.current));
+          loadAndPlay(nextIndex(indexRef.current)).catch(() => {});
         }
         return;
       }
       if (status.didJustFinish && musicOn) {
-        void loadAndPlay(nextIndex(indexRef.current));
+        loadAndPlay(nextIndex(indexRef.current)).catch(() => {});
       }
     });
 
@@ -79,15 +77,14 @@ export default function MusicManager({ forceOn, volume = 0.6, log = false }) {
       await s.setVolumeAsync(volume);
       await s.playAsync();
     } catch {
-      // Advance on any load/play error
       try { await cleanup(); } catch {}
       if (mountedRef.current && musicOn) {
-        void loadAndPlay(nextIndex(i));
+        loadAndPlay(nextIndex(i)).catch(() => {});
       }
     } finally {
       switchingRef.current = false;
     }
-  }
+  }, [musicOn, volume, cleanup, mlog, nextIndex]);
 
   // Handle mount/unmount + AppState (pause on background, resume on active)
   useEffect(() => {
@@ -98,10 +95,8 @@ export default function MusicManager({ forceOn, volume = 0.6, log = false }) {
       const s = soundRef.current;
 
       if (state !== 'active') {
-        // Proactively pause on background/inactive to avoid OS conflicts
         try { await s?.pauseAsync(); } catch {}
       } else {
-        // Came back foreground: if music is on, resume or start fresh
         if (!musicOn) return;
         if (s) {
           try {
@@ -112,14 +107,14 @@ export default function MusicManager({ forceOn, volume = 0.6, log = false }) {
           } catch {}
         } else {
           indexRef.current = Math.floor(Math.random() * lullabies.length);
-          void loadAndPlay(indexRef.current);
+          loadAndPlay(indexRef.current).catch(() => {});
         }
       }
     };
 
     const sub = AppState.addEventListener('change', onChange);
-    return () => { mountedRef.current = false; sub?.remove(); void cleanup(); };
-  }, [musicOn]);
+    return () => { mountedRef.current = false; sub?.remove(); cleanup().catch(() => {}); };
+  }, [musicOn, loadAndPlay, cleanup]);
 
   // React to musicOn toggle
   useEffect(() => {
@@ -127,17 +122,16 @@ export default function MusicManager({ forceOn, volume = 0.6, log = false }) {
     (async () => {
       if (musicOn) {
         await ensureAudioMode();
-        // If app is active, start (or ensure) playback
         if (appStateRef.current === 'active') {
           indexRef.current = Math.floor(Math.random() * lullabies.length);
-          if (!cancelled) void loadAndPlay(indexRef.current);
+          if (!cancelled) loadAndPlay(indexRef.current).catch(() => {});
         }
       } else {
         await cleanup();
       }
     })();
     return () => { cancelled = true; };
-  }, [musicOn]);
+  }, [musicOn, loadAndPlay, cleanup]);
 
   // React to volume changes
   useEffect(() => {
@@ -147,6 +141,5 @@ export default function MusicManager({ forceOn, volume = 0.6, log = false }) {
     })();
   }, [volume]);
 
-  // This component renders nothing
   return null;
 }

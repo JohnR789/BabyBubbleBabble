@@ -34,14 +34,6 @@ try {
   HAS_EXPO_LINEAR_GRADIENT = !!UIManager.getViewManagerConfig?.('ExpoLinearGradient');
 } catch { /* noop */ }
 
-// expo-blur (kept for future mist; never mounted unless safe)
-let BlurView = null;
-let HAS_EXPO_BLUR = false;
-try {
-  BlurView = require('expo-blur').BlurView;
-  HAS_EXPO_BLUR = !!UIManager.getViewManagerConfig?.('ExpoBlurView');
-} catch { /* noop */ }
-
 // react-native-svg
 let SvgPkg = null;
 let Svg, Defs, RadialGradient, Stop, Rect, Path, SvgLinearGradient; // <-- alias name here
@@ -52,16 +44,6 @@ try {
   HAS_RNSVG =
     !!UIManager.getViewManagerConfig?.('RNSVGSvgView') &&
     !!UIManager.getViewManagerConfig?.('RNSVGRadialGradient');
-} catch { /* noop */ }
-
-// expo-image (for photo-real background)
-let ExpoImageMod = null;
-let ExpoImage = null;
-let HAS_EXPO_IMAGE = false;
-try {
-  ExpoImageMod = require('expo-image');
-  ExpoImage = ExpoImageMod.Image;
-  HAS_EXPO_IMAGE = !!UIManager.getViewManagerConfig?.('ExpoImageView');
 } catch { /* noop */ }
 
 // Optional haptics (no-op if not installed)
@@ -162,21 +144,6 @@ const SEP_GAIN = 0.12;
 const SEP_MAX_DELTA = Math.PI / 8;
 const PLACEMENT_ATTEMPTS = 30;
 
-/** --------------------- Background asset toggles ------------------- */
-// Curated portrait-ish skies (replace with your own later)
-const REMOTE_BG = {
-  morning: 'https://images.unsplash.com/photo-1482192505345-5655af888cc4?auto=format&fit=crop&w=1440&q=80',
-  day:     'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1440&q=80',
-  evening: 'https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1440&q=80',
-  night:   'https://images.unsplash.com/photo-1504384308090-c894fdcc538d?auto=format&fit=crop&w=1440&q=60',
-};
-
-// Night extras
-const MILKY_WAY_URL = 'https://images.unsplash.com/photo-1444703686981-a3abbc4d4fe3?auto=format&fit=crop&w=1400&q=60';
-const NOISE_URL     = 'https://upload.wikimedia.org/wikipedia/commons/3/3c/Perlin-noise.png';
-
-const SHOW_MILKY_WAY = true;
-const SHOW_DITHER_NOISE = true;
 const SHOOTING_STAR_EVERY_MS = 15000;
 
 /** --------------------- Quality/Density Preset --------------------- */
@@ -265,118 +232,6 @@ function SkyGradientCrossfade({ width, height, t }) {
         />
       </Animated.View>
     </View>
-  );
-}
-
-/** ---------------------- Photo-real Backdrop (remote) -------------- */
-function phaseForT(t) {
-  return t < 0.25 ? 'night'
-    : t < 0.375 ? 'morning'
-    : t < 0.75 ? 'day'
-    : t < 0.9 ? 'evening'
-    : 'night2';
-}
-
-function HyperRealBackdrop({ width, height, t, tiltX, tiltY, reducedMotion }) {
-  const phase = phaseForT(t).replace('night2', 'night');
-
-  const aPhaseRef = useRef(phase);
-  const bPhaseRef = useRef(phase);
-  const fade = useRef(new Animated.Value(1)).current;
-  const lastPhaseRef = useRef(phase);
-
-  useEffect(() => {
-    if (phase === lastPhaseRef.current) return;
-    bPhaseRef.current = phase;
-    Animated.timing(fade, {
-      toValue: 0,
-      duration: 1400,
-      easing: Easing.inOut(Easing.cubic),
-      useNativeDriver: true,
-    }).start(() => {
-      aPhaseRef.current = bPhaseRef.current;
-      fade.setValue(1);
-      lastPhaseRef.current = phase;
-    });
-  }, [phase, fade]);
-
-  const drift = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    drift.setValue(0);
-    const loop = Animated.loop(
-      Animated.timing(drift, { toValue: 1, duration: reducedMotion ? 140000 : 90000, easing: Easing.linear, useNativeDriver: true })
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [drift, reducedMotion]);
-
-  const panX = drift.interpolate({ inputRange: [0, 1], outputRange: [-width * 0.05, width * 0.05] });
-  const zoom = drift.interpolate({ inputRange: [0, 1], outputRange: [1.02, 1.06] });
-
-  const parallaxX = tiltX ? Animated.multiply(tiltX, 0.30) : 0;
-  const parallaxY = tiltY ? Animated.multiply(tiltY, 0.22) : 0;
-
-  if (!(ExpoImage && HAS_EXPO_IMAGE)) return null;
-  const AnimatedExpoImage = Animated.createAnimatedComponent(ExpoImage);
-  const baseImgProps = { contentFit: 'cover', transition: 250, cachePolicy: 'disk', priority: 'high' };
-  const A = aPhaseRef.current;
-  const B = bPhaseRef.current;
-
-  return (
-    <View pointerEvents="none" style={[StyleSheet.absoluteFill, { overflow: 'hidden' }]}>
-      <AnimatedExpoImage
-        {...baseImgProps}
-        source={{ uri: REMOTE_BG[A] || REMOTE_BG.day }}
-        style={[
-          StyleSheet.absoluteFill,
-          { transform: [{ translateX: Animated.add(panX, parallaxX) }, { translateY: parallaxY }, { scale: zoom }], opacity: fade }
-        ]}
-      />
-      <AnimatedExpoImage
-        {...baseImgProps}
-        source={{ uri: REMOTE_BG[B] || REMOTE_BG.day }}
-        style={[
-          StyleSheet.absoluteFill,
-          { transform: [{ translateX: Animated.add(panX, parallaxX) }, { translateY: parallaxY }, { scale: zoom }],
-            opacity: Animated.subtract(1, fade) }
-        ]}
-      />
-    </View>
-  );
-}
-
-/** --------------------------- Milky Way (night) -------------------- */
-function MilkyWayLayer({ width, height, isNight, tiltX, tiltY, reducedMotion }) {
-  const visible = isNight && !!(ExpoImage && HAS_EXPO_IMAGE) && SHOW_MILKY_WAY;
-
-  const drift = useRef(new Animated.Value(0)).current;
-  useEffect(() => {
-    if (!visible) return undefined;
-    drift.setValue(0);
-    const loop = Animated.loop(
-      Animated.timing(drift, { toValue: 1, duration: reducedMotion ? 160000 : 110000, easing: Easing.linear, useNativeDriver: true })
-    );
-    loop.start();
-    return () => loop.stop();
-  }, [drift, reducedMotion, visible]);
-
-  if (!visible) return null;
-  const AnimatedExpoImage = Animated.createAnimatedComponent(ExpoImage);
-
-  const rot = drift.interpolate({ inputRange: [0, 1], outputRange: ['-5deg', '5deg'] });
-  const parallaxX = tiltX ? Animated.multiply(tiltX, 0.25) : 0;
-  const parallaxY = tiltY ? Animated.multiply(tiltY, 0.18) : 0;
-
-  return (
-    <AnimatedExpoImage
-      source={{ uri: MILKY_WAY_URL }}
-      style={[
-        StyleSheet.absoluteFill,
-        { opacity: 0.12, transform: [{ rotate: rot }, { translateX: parallaxX }, { translateY: parallaxY }] }
-      ]}
-      contentFit="cover"
-      pointerEvents="none"
-    />
   );
 }
 
@@ -550,10 +405,10 @@ function SunMoon({ width, height, t, tiltX, tiltY, isNight, paused, reducedMotio
   if (tiltX) transforms.push({ translateX: Animated.multiply(tiltX, 0.5) });
   if (tiltY) transforms.push({ translateY: Animated.multiply(tiltY, 0.4) });
 
-  const flares = isNight || reducedMotion ? [] : [0.0, 0.25, 0.5, 0.75].map((t, i) => ({
+  const flares = isNight || reducedMotion ? [] : [0.0, 0.25, 0.5, 0.75].map((step, i) => ({
     key: `flare-${i}`,
-    left: size * (1 + t * 3.2),
-    top: size * (-0.2 - t * 0.35),
+    left: size * (1 + step * 3.2),
+    top: size * (-0.2 - step * 0.35),
     r: Math.max(2, 6 - i * 1.2),
     opacity: 0.15 - i * 0.02,
   }));
@@ -698,50 +553,50 @@ function StarsLayer({ width, height, isNight, paused, reducedMotion }) {
   );
 }
 
+function makeClouds(count, depth, width, height, isNight, reducedMotion) {
+  const rows = Math.max(1, Math.min(CLOUD_ROWS, Math.round(height / 160)));
+  return Array.from({ length: count }).map((_, i) => {
+    const cw = rand(CLOUD_MIN_W * (depth === 'back' ? 1.2 : 0.9), CLOUD_MAX_W * (depth === 'back' ? 1.4 : 1.05));
+    const ch = cw * 0.6;
+    const band = i % rows;
+    const bandH = height / rows;
+    const y = rand(band * bandH + 8, (band + 1) * bandH - ch - 8);
+    const dir = Math.random() < 0.5 ? 1 : -1;
+    const speedScale = depth === 'back' ? 0.6 : 1.0;
+    const speed = rand(CLOUD_MIN_SPD, CLOUD_MAX_SPD) * speedScale * (0.75 + (band / rows) * 0.4);
+    const opacityBase = rand(CLOUD_OPACITY_MIN, CLOUD_OPACITY_MAX) * (depth === 'back' ? 0.75 : 1);
+    const opacity = isNight ? opacityBase * 0.85 : opacityBase;
+    const startX = dir === 1 ? -cw - rand(0, width * 0.7) : width + rand(0, width * 0.7);
+    const endX   = dir === 1 ? width + cw : -cw;
+    const parallax = (depth === 'back' ? 0.45 : 0.9) + (band / (rows - 1 || 1)) * (depth === 'back' ? 0.5 : 0.8);
+    const tx = new Animated.Value(startX);
+    const bob = new Animated.Value(0);
+
+    const bobMs = reducedMotion ? CLOUD_BOB_MS * 1.6 : CLOUD_BOB_MS;
+    const bobRange = reducedMotion ? CLOUD_BOB_RANGE * 0.6 : CLOUD_BOB_RANGE;
+
+    const up = Animated.timing(bob, { toValue: -bobRange, duration: bobMs, easing: Easing.inOut(Easing.quad), useNativeDriver: true });
+    const down = Animated.timing(bob, { toValue:  bobRange, duration: bobMs, easing: Easing.inOut(Easing.quad), useNativeDriver: true });
+    const loop = Animated.loop(Animated.sequence([up, down]));
+
+    return {
+      id: `cloud-${depth}-${i}-${cw.toFixed(0)}`,
+      cw, ch, y, speed, opacity, startX, endX, parallax, tx, bob, depth,
+      loopStart: () => loop.start(),
+      loopStop:  () => loop.stop(),
+      _loop: loop,
+    };
+  });
+}
+
 /** ----------------------- Clouds (2-layer parallax) ---------------- */
 function CloudsBackground({ width, height, tiltX, tiltY, isNight, paused, reducedMotion }) {
   const baseCount = clamp(Math.round((width * height) / 180000), 5, 10);
   const backCount = Math.max(2, Math.floor(baseCount * 0.6));
   const frontCount = baseCount;
 
-  const makeClouds = (count, depth) => {
-    const rows = Math.max(1, Math.min(CLOUD_ROWS, Math.round(height / 160)));
-    return Array.from({ length: count }).map((_, i) => {
-      const cw = rand(CLOUD_MIN_W * (depth === 'back' ? 1.2 : 0.9), CLOUD_MAX_W * (depth === 'back' ? 1.4 : 1.05));
-      const ch = cw * 0.6;
-      const band = i % rows;
-      const bandH = height / rows;
-      const y = rand(band * bandH + 8, (band + 1) * bandH - ch - 8);
-      const dir = Math.random() < 0.5 ? 1 : -1;
-      const speedScale = depth === 'back' ? 0.6 : 1.0;
-      const speed = rand(CLOUD_MIN_SPD, CLOUD_MAX_SPD) * speedScale * (0.75 + (band / rows) * 0.4);
-      const opacityBase = rand(CLOUD_OPACITY_MIN, CLOUD_OPACITY_MAX) * (depth === 'back' ? 0.75 : 1);
-      const opacity = isNight ? opacityBase * 0.85 : opacityBase;
-      const startX = dir === 1 ? -cw - rand(0, width * 0.7) : width + rand(0, width * 0.7);
-      const endX   = dir === 1 ? width + cw : -cw;
-      const parallax = (depth === 'back' ? 0.45 : 0.9) + (band / (rows - 1 || 1)) * (depth === 'back' ? 0.5 : 0.8);
-      const tx = new Animated.Value(startX);
-      const bob = new Animated.Value(0);
-
-      const bobMs = reducedMotion ? CLOUD_BOB_MS * 1.6 : CLOUD_BOB_MS;
-      const bobRange = reducedMotion ? CLOUD_BOB_RANGE * 0.6 : CLOUD_BOB_RANGE;
-
-      const up = Animated.timing(bob, { toValue: -bobRange, duration: bobMs, easing: Easing.inOut(Easing.quad), useNativeDriver: true });
-      const down = Animated.timing(bob, { toValue:  bobRange, duration: bobMs, easing: Easing.inOut(Easing.quad), useNativeDriver: true });
-      const loop = Animated.loop(Animated.sequence([up, down]));
-
-      return {
-        id: `cloud-${depth}-${i}-${cw.toFixed(0)}`,
-        cw, ch, y, speed, opacity, startX, endX, parallax, tx, bob, depth,
-        loopStart: () => loop.start(),
-        loopStop:  () => loop.stop(),
-        _loop: loop,
-      };
-    });
-  };
-
-  const backClouds  = useMemo(() => makeClouds(backCount, 'back'),  [width, height, backCount, isNight, reducedMotion]);
-  const frontClouds = useMemo(() => makeClouds(frontCount, 'front'), [width, height, frontCount, isNight, reducedMotion]);
+  const backClouds  = useMemo(() => makeClouds(backCount, 'back', width, height, isNight, reducedMotion),  [width, height, backCount, isNight, reducedMotion]);
+  const frontClouds = useMemo(() => makeClouds(frontCount, 'front', width, height, isNight, reducedMotion), [width, height, frontCount, isNight, reducedMotion]);
 
   useEffect(() => {
     const all = [...backClouds, ...frontClouds];
@@ -875,20 +730,7 @@ function DistantHills({ width, height, tiltX, tiltY, isNight }) {
   );
 }
 
-/** ------------------------- Dither/Noise overlay ------------------- */
-function DitherNoise({ width, height }) {
-  if (!(ExpoImage && HAS_EXPO_IMAGE) || !SHOW_DITHER_NOISE) return null;
-  return (
-    <ExpoImage
-      source={{ uri: NOISE_URL }}
-      style={[StyleSheet.absoluteFill, { opacity: 0.035 }]}
-      contentFit="cover"
-      pointerEvents="none"
-    />
-  );
-}
-
-/** ------------------------- Gun Shots Overlay ---------------------- */
+/** ------------------------- Drag stream overlay ---------------------- */
 const ShotsLayer = React.memo(function ShotsLayer({ shots }) {
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
@@ -991,7 +833,7 @@ export default function BubbleScene() {
     return () => sub && sub.remove();
   }, [tiltX, tiltY, paused, reducedMotion]);
 
-  const [combo, setCombo] = useState(0);
+  const comboRef = useRef(0);
   const lastPopAtRef = useRef(0);
   const boostRef = useRef(1);
   const boostTimeoutRef = useRef(null);
@@ -1278,19 +1120,17 @@ export default function BubbleScene() {
       clearTimeout(boostTimeoutRef.current);
       stopFns.forEach((fn) => fn?.());
     };
-  }, [bubbles, width, height, paused, reducedMotion]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [bubbles, width, height, paused, reducedMotion]);
 
   const registerPop = () => {
     try { Haptics && Haptics.impactAsync?.(Haptics.ImpactFeedbackStyle.Light); } catch {}
     const time = Date.now();
     if (time - lastPopAtRef.current <= COMBO_WINDOW_MS) {
-      setCombo((c) => {
-        const next = c + 1;
-        if (c < COMBO_THRESHOLD && next >= COMBO_THRESHOLD) triggerCombo();
-        return next;
-      });
+      const next = comboRef.current + 1;
+      if (comboRef.current < COMBO_THRESHOLD && next >= COMBO_THRESHOLD) triggerCombo();
+      comboRef.current = next;
     } else {
-      setCombo(1);
+      comboRef.current = 1;
     }
     lastPopAtRef.current = time;
   };
@@ -1317,12 +1157,12 @@ export default function BubbleScene() {
     ]).start(() => b.__respawn?.());
   };
 
-  const GUN_INTERVAL_MS = reducedMotion ? 140 : 110;
-  const GUN_SFX_PROB = 0.15;
+  const STREAM_INTERVAL_MS = reducedMotion ? 140 : 110;
+  const STREAM_SFX_PROB = 0.15;
   const [shots, setShots] = useState([]);
-  const gunActiveRef = useRef(false);
+  const streamActiveRef = useRef(false);
   const fingerRef = useRef({ x: width / 2, y: height / 2 });
-  const gunTimerRef = useRef(null);
+  const streamTimerRef = useRef(null);
   const lastShotSfxAtRef = useRef(0);
 
   const spawnShot = (x, y) => {
@@ -1367,43 +1207,43 @@ export default function BubbleScene() {
       });
 
       const ts = Date.now();
-      if (Math.random() < GUN_SFX_PROB && ts - lastShotSfxAtRef.current > 500) {
+      if (Math.random() < STREAM_SFX_PROB && ts - lastShotSfxAtRef.current > 500) {
         lastShotSfxAtRef.current = ts;
         try { playPopSound(); } catch {}
       }
     });
   };
 
-  const startGun = (x, y) => {
+  const startStream = (x, y) => {
     if (paused) return;
-    gunActiveRef.current = true;
+    streamActiveRef.current = true;
     fingerRef.current = { x, y };
-    if (gunTimerRef.current) clearInterval(gunTimerRef.current);
-    gunTimerRef.current = setInterval(() => {
-      if (!gunActiveRef.current || paused) return;
+    if (streamTimerRef.current) clearInterval(streamTimerRef.current);
+    streamTimerRef.current = setInterval(() => {
+      if (!streamActiveRef.current || paused) return;
       const { x: fx, y: fy } = fingerRef.current;
       spawnShot(fx, fy);
-    }, GUN_INTERVAL_MS);
+    }, STREAM_INTERVAL_MS);
   };
 
-  const moveGun = (x, y) => { fingerRef.current = { x, y }; };
-  const stopGun = () => {
-    gunActiveRef.current = false;
-    if (gunTimerRef.current) { clearInterval(gunTimerRef.current); gunTimerRef.current = null; }
+  const moveStream = (x, y) => { fingerRef.current = { x, y }; };
+  const stopStream = () => {
+    streamActiveRef.current = false;
+    if (streamTimerRef.current) { clearInterval(streamTimerRef.current); streamTimerRef.current = null; }
   };
-  useEffect(() => () => stopGun(), []);
+  useEffect(() => () => stopStream(), []);
 
   // Long press + pan gesture
   const longPress = Gesture.LongPress()
     .minDuration(250)
-    .onStart((e) => runOnJS(startGun)(e.x, e.y))
-    .onEnd(() => runOnJS(stopGun)())
-    .onFinalize(() => runOnJS(stopGun)());
+    .onStart((e) => runOnJS(startStream)(e.x, e.y))
+    .onEnd(() => runOnJS(stopStream)())
+    .onFinalize(() => runOnJS(stopStream)());
   const pan = Gesture.Pan()
-    .onBegin((e) => runOnJS(moveGun)(e.x, e.y))
-    .onUpdate((e) => runOnJS(moveGun)(e.x, e.y))
-    .onEnd(() => runOnJS(stopGun)())
-    .onFinalize(() => runOnJS(stopGun)());
+    .onBegin((e) => runOnJS(moveStream)(e.x, e.y))
+    .onUpdate((e) => runOnJS(moveStream)(e.x, e.y))
+    .onEnd(() => runOnJS(stopStream)())
+    .onFinalize(() => runOnJS(stopStream)());
   const gesture = Gesture.Simultaneous(longPress, pan);
 
   /** ------------------------------ Render --------------------------- */
@@ -1415,18 +1255,7 @@ export default function BubbleScene() {
         {/* Cross-faded sky gradient (safe fallback if no native gradient) */}
         <SkyGradientCrossfade width={width} height={height} t={t} />
 
-        {/* Hyper-real photo backdrop (remote, cached) */}
-        <HyperRealBackdrop
-          width={width}
-          height={height}
-          t={t}
-          tiltX={tiltX}
-          tiltY={tiltY}
-          reducedMotion={reducedMotion}
-        />
 
-        {/* Milky Way (night) */}
-        <MilkyWayLayer width={width} height={height} isNight={isNight} tiltX={tiltX} tiltY={tiltY} reducedMotion={reducedMotion} />
 
         {/* Stars + sun/moon (behind clouds) */}
         <StarsLayer width={width} height={height} isNight={isNight} paused={paused} reducedMotion={reducedMotion} />
@@ -1441,7 +1270,7 @@ export default function BubbleScene() {
         {/* Subtle horizon haze */}
         <HorizonHaze width={width} height={height} isNight={isNight} />
 
-        {/* Gun shots beneath main bubbles */}
+        {/* Stream bubbles beneath main bubbles */}
         <ShotsLayer shots={shots} />
 
         {/* Main bubbles with tilt parallax + optional jackpot halo */}
@@ -1497,8 +1326,7 @@ export default function BubbleScene() {
           return <Animated.View key={c.id} pointerEvents="none" style={style} />;
         })}
 
-        {/* Dither to reduce banding */}
-        <DitherNoise width={width} height={height} />
+
 
         {/* Gentle vignette to frame the scene */}
         <VignetteOverlay width={width} height={height} />

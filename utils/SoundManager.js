@@ -1,37 +1,25 @@
-// utils/SoundManager.js
 import { Platform } from 'react-native';
 import { Audio } from 'expo-av';
+import { SOUNDS } from '../assets';
 
 /** Toggle for local debugging (kept false to silence logs) */
 const DEBUG_AUDIO = false;
 const debugLog = (...args) => { if (DEBUG_AUDIO) console.log('[SoundManager]', ...args); };
 
-/* ------------------------------------------------------------------ */
-/* Sources                                                            */
-/* ------------------------------------------------------------------ */
 const SOURCES = {
-  pop:    require('../assets/sounds/pops/pop1.mp3'),
-  giggle: require('../assets/sounds/giggles/giggle1.mp3'),
-};
-
-const animalSounds = {
-  duck:  require('../assets/sounds/animal_sounds/duck.mp3'),
-  sheep: require('../assets/sounds/animal_sounds/sheep.wav'),
-  frog:  require('../assets/sounds/animal_sounds/frog.mp3'),
-  horse: require('../assets/sounds/animal_sounds/horse.wav'),
-  cow:   require('../assets/sounds/animal_sounds/cow.wav'),
+  pop: SOUNDS.pops.pop1,
+  giggle: SOUNDS.giggles.giggle1,
 };
 
 /* ------------------------------------------------------------------ */
-/* Cache (key -> { sound, loaded, loading })                          */
+/* Cache (key -> { sound, loaded, loading })                           */
 /* ------------------------------------------------------------------ */
 const cache = new Map();
 let audioModeSet = false;
+let sfxEnabled = true;
 
 /* ------------------------------------------------------------------ */
 /* Audio mode                                                         */
-/*  - iOS: uses iOS keys only                                         */
-/*  - Android: avoids interruptionModeAndroid (was causing warning)   */
 /* ------------------------------------------------------------------ */
 export async function ensureAudioMode() {
   if (audioModeSet) return;
@@ -46,8 +34,6 @@ export async function ensureAudioMode() {
       });
     } else if (Platform.OS === 'android') {
       await Audio.setAudioModeAsync({
-        // NOTE: We intentionally do NOT set interruptionModeAndroid to avoid
-        //       "invalid value" warnings on newer SDKs.
         shouldDuckAndroid: false,
         playThroughEarpieceAndroid: false,
         staysActiveInBackground: false,
@@ -81,7 +67,6 @@ async function ensureLoaded(key, src) {
         .loadAsync(src, { shouldPlay: false, volume: 1.0 }, false)
         .then(() => { entry.loaded = true; })
         .catch(() => {
-          // Reset entry so future attempts can try again
           entry.loading = null;
           entry.loaded = false;
           throw new Error('load failed');
@@ -105,6 +90,14 @@ async function safeReplay(sound) {
 /* ------------------------------------------------------------------ */
 /* Public API                                                         */
 /* ------------------------------------------------------------------ */
+export function setSfxEnabled(enabled) {
+  sfxEnabled = enabled;
+}
+
+export function isSfxEnabled() {
+  return sfxEnabled;
+}
+
 export async function preloadCoreSfx() {
   try {
     await Promise.all([
@@ -115,6 +108,7 @@ export async function preloadCoreSfx() {
 }
 
 export async function playPopSound() {
+  if (!sfxEnabled) return;
   try {
     const s = await ensureLoaded('pop', SOURCES.pop);
     await safeReplay(s);
@@ -122,6 +116,7 @@ export async function playPopSound() {
 }
 
 export async function playGiggleSound() {
+  if (!sfxEnabled) return;
   try {
     const s = await ensureLoaded('giggle', SOURCES.giggle);
     await safeReplay(s);
@@ -129,7 +124,8 @@ export async function playGiggleSound() {
 }
 
 export async function playAnimalSound(name) {
-  const src = animalSounds[name];
+  if (!sfxEnabled) return;
+  const src = SOUNDS.animalSounds[name];
   if (!src) return;
   try {
     const s = await ensureLoaded(name, src);
@@ -145,8 +141,5 @@ export async function unloadAll() {
     } catch {}
   }
   cache.clear();
-  audioModeSet = false; // allow re-init after full unload
+  audioModeSet = false;
 }
-
-
-
