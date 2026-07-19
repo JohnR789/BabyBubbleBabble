@@ -177,6 +177,7 @@ export function createRealPurchaseService(): PurchaseService {
         };
       } catch (error: any) {
         if (
+          error?.code === 'user-cancelled' ||
           error?.code === 'E_USER_CANCELLED' ||
           error?.message?.toLowerCase().includes('cancel')
         ) {
