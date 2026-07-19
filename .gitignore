@@ -28,3 +28,5 @@ vendor__DISABLED/
 server/.env
 server/.env.local
 server/*.egg-info
+__pycache__/
+*.egg-info
