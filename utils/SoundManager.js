@@ -4,8 +4,6 @@ import { SOUNDS } from '../assets';
 const DEBUG_AUDIO = false;
 const debugLog = (...args) => { if (DEBUG_AUDIO) console.log('[SoundManager]', ...args); };
 
-const POP_KEYS = ['pop1', 'pop2', 'pop3'];
-
 let audioModeSet = false;
 let sfxEnabled = true;
 const cache = new Map();
@@ -50,75 +48,46 @@ export function isSfxEnabled() {
 export async function preloadCoreSfx() {
   try {
     await ensureAudioMode();
-    getPlayer('giggle', SOUNDS.giggles.giggle1);
-    POP_KEYS.forEach((k) => getPlayer(`pop:${k}`, SOUNDS.pops[k]));
+    Object.entries(SOUNDS.effects).forEach(([key, src]) => {
+      getPlayer(`effect:${key}`, src);
+    });
+    getPlayer('music:ambient', SOUNDS.music.ambient);
   } catch {}
 }
 
-export async function playPopSound() {
+export async function playEffect(name) {
   if (!sfxEnabled) return;
-  try {
-    await ensureAudioMode();
-    const key = POP_KEYS[Math.floor(Math.random() * POP_KEYS.length)];
-    replay(getPlayer(`pop:${key}`, SOUNDS.pops[key]));
-  } catch {}
-}
-
-export async function playGiggleSound() {
-  if (!sfxEnabled) return;
-  try {
-    await ensureAudioMode();
-    replay(getPlayer('giggle', SOUNDS.giggles.giggle1));
-  } catch {}
-}
-
-export async function playAnimalSound(name) {
-  if (!sfxEnabled) return;
-  const src = SOUNDS.animalSounds[name];
+  const src = SOUNDS.effects[name];
   if (!src) return;
   try {
     await ensureAudioMode();
-    replay(getPlayer(`animal:${name}`, src));
+    replay(getPlayer(`effect:${name}`, src));
   } catch {}
 }
 
-export async function playBounceSound() {
-  if (!sfxEnabled) return;
+export async function playPop() { return playEffect('pop'); }
+export async function playSnap() { return playEffect('snap'); }
+export async function playPlop() { return playEffect('plop'); }
+export async function playScoop() { return playEffect('scoop'); }
+export async function playWaterPour() { return playEffect('waterPour'); }
+export async function playRattle() { return playEffect('rattle'); }
+export async function playBell() { return playEffect('bell'); }
+export async function playDrum() { return playEffect('drum'); }
+export async function playSuccess() { return playEffect('success'); }
+
+export async function playMusic() {
   try {
     await ensureAudioMode();
-    replay(getPlayer('effect:bounce', SOUNDS.effects.bounce));
+    const p = getPlayer('music:ambient', SOUNDS.music.ambient);
+    p.loop = true;
+    p.play();
   } catch {}
 }
 
-export async function playSplashSound() {
-  if (!sfxEnabled) return;
+export async function pauseMusic() {
   try {
-    await ensureAudioMode();
-    replay(getPlayer('effect:splash', SOUNDS.effects.splash));
-  } catch {}
-}
-
-export async function playSnapSound() {
-  if (!sfxEnabled) return;
-  try {
-    await ensureAudioMode();
-    replay(getPlayer('effect:snap', SOUNDS.effects.snap));
-  } catch {}
-}
-
-export async function playClackSound() {
-  if (!sfxEnabled) return;
-  try {
-    await ensureAudioMode();
-    replay(getPlayer('effect:clack', SOUNDS.effects.clack));
-  } catch {}
-}
-
-export async function playChimeSound() {
-  if (!sfxEnabled) return;
-  try {
-    await ensureAudioMode();
-    replay(getPlayer('effect:chime', SOUNDS.effects.chime));
+    const p = cache.get('music:ambient');
+    p?.pause();
   } catch {}
 }
 

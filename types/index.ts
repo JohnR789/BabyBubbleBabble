@@ -2,15 +2,16 @@ import type { ParamListBase } from '@react-navigation/native';
 
 export type AppParamList = {
   Home: undefined;
-  BubbleScene: undefined;
-  BallScene: undefined;
-  AnimalParadeScene: undefined;
-  AnimalSoundsScene: undefined;
-  NightSkyScene: undefined;
-  PeekabooScene: undefined;
-  PondScene: undefined;
-  StackingScene: undefined;
-  ShapeSorterScene: undefined;
+  PouringScene: undefined;
+  ColorSortScene: undefined;
+  SoundMatchScene: undefined;
+  LetterGardenScene: undefined;
+  CountingScene: undefined;
+  FlowerArrangeScene: undefined;
+  ButtonFrameScene: undefined;
+  PuzzleMapScene: undefined;
+  ShapeTraceScene: undefined;
+  SpoonTransferScene: undefined;
   ParentalArea: undefined;
 };
 

@@ -46,3 +46,7 @@ jest.mock('expo-haptics', () => ({
   ImpactFeedbackStyle: { Light: 'light' },
 }), { virtual: true });
 jest.mock('expo-sensors', () => ({ Accelerometer: { addListener: () => ({ remove() {} }), setUpdateInterval: () => {} } }), { virtual: true });
+jest.mock('expo-speech', () => ({
+  speak: jest.fn(),
+  stop: jest.fn(),
+}), { virtual: true });

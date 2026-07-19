@@ -4,30 +4,32 @@
 
 export const ROUTES = {
   Home: 'Home',
-  BubbleScene: 'BubbleScene',
-  BallScene: 'BallScene',
-  AnimalParadeScene: 'AnimalParadeScene',
-  AnimalSoundsScene: 'AnimalSoundsScene',
-  NightSkyScene: 'NightSkyScene',
-  PeekabooScene: 'PeekabooScene',
-  PondScene: 'PondScene',
-  StackingScene: 'StackingScene',
-  ShapeSorterScene: 'ShapeSorterScene',
+  PouringScene: 'PouringScene',
+  ColorSortScene: 'ColorSortScene',
+  SoundMatchScene: 'SoundMatchScene',
+  LetterGardenScene: 'LetterGardenScene',
+  CountingScene: 'CountingScene',
+  FlowerArrangeScene: 'FlowerArrangeScene',
+  ButtonFrameScene: 'ButtonFrameScene',
+  PuzzleMapScene: 'PuzzleMapScene',
+  ShapeTraceScene: 'ShapeTraceScene',
+  SpoonTransferScene: 'SpoonTransferScene',
   ParentalArea: 'ParentalArea',
 } as const;
 
 export type RouteName = keyof typeof ROUTES;
 
 export const SCENES = [
-  { route: ROUTES.BubbleScene, label: 'Bubbles', icon: '🫧', premium: false },
-  { route: ROUTES.BallScene, label: 'Balls', icon: '⚽', premium: false },
-  { route: ROUTES.AnimalParadeScene, label: 'Animal Parade', icon: '🐄', premium: false },
-  { route: ROUTES.NightSkyScene, label: 'Night Sky', icon: '🌙', premium: true },
-  { route: ROUTES.PeekabooScene, label: 'Peekaboo', icon: '🫣', premium: true },
-  { route: ROUTES.PondScene, label: 'Pond', icon: '🐸', premium: true },
-  { route: ROUTES.StackingScene, label: 'Stacking', icon: '🧱', premium: true },
-  { route: ROUTES.ShapeSorterScene, label: 'Shape Sorter', icon: '🔷', premium: true },
-  { route: ROUTES.AnimalSoundsScene, label: 'Animal Sounds', icon: '🔊', premium: true },
+  { route: ROUTES.PouringScene, label: 'Pouring', icon: '🫗', premium: false },
+  { route: ROUTES.ColorSortScene, label: 'Color Sort', icon: '🎨', premium: false },
+  { route: ROUTES.SoundMatchScene, label: 'Sound Match', icon: '🔔', premium: false },
+  { route: ROUTES.LetterGardenScene, label: 'Letter Garden', icon: '🔤', premium: false },
+  { route: ROUTES.CountingScene, label: 'Counting', icon: '🔢', premium: false },
+  { route: ROUTES.FlowerArrangeScene, label: 'Flower Arrange', icon: '🌸', premium: true },
+  { route: ROUTES.ButtonFrameScene, label: 'Button Frame', icon: '🧵', premium: true },
+  { route: ROUTES.PuzzleMapScene, label: 'Puzzle Map', icon: '🌍', premium: true },
+  { route: ROUTES.ShapeTraceScene, label: 'Shape Trace', icon: '✏️', premium: true },
+  { route: ROUTES.SpoonTransferScene, label: 'Spoon Transfer', icon: '🥄', premium: true },
 ] as const;
 
 export const PARENTAL_GATE = {

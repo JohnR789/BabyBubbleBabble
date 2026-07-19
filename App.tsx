@@ -7,15 +7,16 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 
 import Home from './scenes/Home';
-import BubbleScene from './scenes/BubbleScene';
-import BallScene from './scenes/BallScene';
-import AnimalParadeScene from './scenes/AnimalParadeScene';
-import AnimalSoundsScene from './scenes/AnimalSoundsScene';
-import NightSkyScene from './scenes/NightSkyScene';
-import PeekabooScene from './scenes/PeekabooScene';
-import PondScene from './scenes/PondScene';
-import StackingScene from './scenes/StackingScene';
-import ShapeSorterScene from './scenes/ShapeSorterScene';
+import PouringScene from './scenes/PouringScene';
+import ColorSortScene from './scenes/ColorSortScene';
+import SoundMatchScene from './scenes/SoundMatchScene';
+import LetterGardenScene from './scenes/LetterGardenScene';
+import CountingScene from './scenes/CountingScene';
+import FlowerArrangeScene from './scenes/FlowerArrangeScene';
+import ButtonFrameScene from './scenes/ButtonFrameScene';
+import PuzzleMapScene from './scenes/PuzzleMapScene';
+import ShapeTraceScene from './scenes/ShapeTraceScene';
+import SpoonTransferScene from './scenes/SpoonTransferScene';
 import ParentalArea from './ParentalArea';
 
 import { SettingsProvider } from './SettingsContext';
@@ -33,28 +34,29 @@ export default function App() {
           <PremiumProvider>
             <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
             <NavigationContainer>
-            <Stack.Navigator
-              initialRouteName="Home"
-              screenOptions={{
-                headerShown: true,
-                headerTitleAlign: 'center',
-                headerStyle: { backgroundColor: COLORS.background },
-                headerTintColor: COLORS.text,
-              }}
-            >
-              <Stack.Screen name="Home" component={Home} options={{ title: 'Baby Bubble Babble' }} />
-              <Stack.Screen name="BubbleScene" options={{ title: 'Bubbles' }} component={BubbleScene} />
-              <Stack.Screen name="BallScene" options={{ title: 'Balls' }} component={BallScene} />
-              <Stack.Screen name="AnimalParadeScene" options={{ title: 'Animal Parade' }} component={AnimalParadeScene} />
-              <Stack.Screen name="AnimalSoundsScene" options={{ title: 'Animal Sounds' }} component={AnimalSoundsScene} />
-              <Stack.Screen name="NightSkyScene" options={{ title: 'Night Sky' }} component={NightSkyScene} />
-              <Stack.Screen name="PeekabooScene" options={{ title: 'Peekaboo' }} component={PeekabooScene} />
-              <Stack.Screen name="PondScene" options={{ title: 'Pond' }} component={PondScene} />
-              <Stack.Screen name="StackingScene" options={{ title: 'Stacking' }} component={StackingScene} />
-              <Stack.Screen name="ShapeSorterScene" options={{ title: 'Shape Sorter' }} component={ShapeSorterScene} />
-              <Stack.Screen name="ParentalArea" options={{ title: 'Parents' }} component={ParentalArea} />
-            </Stack.Navigator>
-          </NavigationContainer>
+              <Stack.Navigator
+                initialRouteName="Home"
+                screenOptions={{
+                  headerShown: true,
+                  headerTitleAlign: 'center',
+                  headerStyle: { backgroundColor: COLORS.background },
+                  headerTintColor: COLORS.text,
+                }}
+              >
+                <Stack.Screen name="Home" component={Home} options={{ title: 'Baby Bubble Babble' }} />
+                <Stack.Screen name="PouringScene" options={{ title: 'Pouring' }} component={PouringScene} />
+                <Stack.Screen name="ColorSortScene" options={{ title: 'Color Sort' }} component={ColorSortScene} />
+                <Stack.Screen name="SoundMatchScene" options={{ title: 'Sound Match' }} component={SoundMatchScene} />
+                <Stack.Screen name="LetterGardenScene" options={{ title: 'Letter Garden' }} component={LetterGardenScene} />
+                <Stack.Screen name="CountingScene" options={{ title: 'Counting' }} component={CountingScene} />
+                <Stack.Screen name="FlowerArrangeScene" options={{ title: 'Flower Arrange' }} component={FlowerArrangeScene} />
+                <Stack.Screen name="ButtonFrameScene" options={{ title: 'Button Frame' }} component={ButtonFrameScene} />
+                <Stack.Screen name="PuzzleMapScene" options={{ title: 'Puzzle Map' }} component={PuzzleMapScene} />
+                <Stack.Screen name="ShapeTraceScene" options={{ title: 'Shape Trace' }} component={ShapeTraceScene} />
+                <Stack.Screen name="SpoonTransferScene" options={{ title: 'Spoon Transfer' }} component={SpoonTransferScene} />
+                <Stack.Screen name="ParentalArea" options={{ title: 'Parents' }} component={ParentalArea} />
+              </Stack.Navigator>
+            </NavigationContainer>
           </PremiumProvider>
         </SettingsProvider>
       </SafeAreaProvider>
