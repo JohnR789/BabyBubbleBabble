@@ -26,7 +26,7 @@ export default function Peekaboo({ x, y, img, onPeek }) {
   return (
     <Animated.View style={[styles.peekabooContainer, { left: x, top: y, transform: [{ scale }] }]}>
       <TouchableWithoutFeedback onPress={showAnim}>
-        <Image source={img} style={styles.peekabooImage} accessibilityLabel="Peekaboo" />
+        <Image source={img} style={styles.peekabooImage} accessibilityLabel="Peekaboo" accessibilityRole="button" />
       </TouchableWithoutFeedback>
     </Animated.View>
   );

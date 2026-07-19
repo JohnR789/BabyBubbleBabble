@@ -28,6 +28,7 @@ export default function Firefly({ x, y, onCatch }) {
           source={IMAGES.icons.firefly}
           style={styles.fireflyImage}
           accessibilityLabel="Firefly"
+          accessibilityRole="button"
         />
       </TouchableWithoutFeedback>
     </Animated.View>

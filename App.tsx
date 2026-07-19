@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import React from 'react';
-import { StatusBar } from 'react-native';
+import { StatusBar, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
@@ -14,6 +14,7 @@ import NightSkyScene from './scenes/NightSkyScene';
 import PeekabooScene from './scenes/PeekabooScene';
 import PondScene from './scenes/PondScene';
 import StackingScene from './scenes/StackingScene';
+import ShapeSorterScene from './scenes/ShapeSorterScene';
 import ParentalArea from './ParentalArea';
 
 import { SettingsProvider } from './SettingsContext';
@@ -25,7 +26,7 @@ const Stack = createStackNavigator<AppParamList>();
 
 export default function App() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
+    <GestureHandlerRootView style={styles.gestureRoot}>
       <SafeAreaProvider>
         <SettingsProvider>
           <PremiumProvider>
@@ -48,6 +49,7 @@ export default function App() {
               <Stack.Screen name="PeekabooScene" options={{ title: 'Peekaboo' }} component={PeekabooScene} />
               <Stack.Screen name="PondScene" options={{ title: 'Pond' }} component={PondScene} />
               <Stack.Screen name="StackingScene" options={{ title: 'Stacking' }} component={StackingScene} />
+              <Stack.Screen name="ShapeSorterScene" options={{ title: 'Shape Sorter' }} component={ShapeSorterScene} />
               <Stack.Screen name="ParentalArea" options={{ title: 'Parents' }} component={ParentalArea} />
             </Stack.Navigator>
           </NavigationContainer>
@@ -57,3 +59,7 @@ export default function App() {
     </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({
+  gestureRoot: { flex: 1 },
+});

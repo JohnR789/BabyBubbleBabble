@@ -41,6 +41,7 @@ export default function Ball({ x, y, maxX, maxY, onBounce }) {
           source={IMAGES.balls.ball1}
           style={styles.ballImage}
           accessibilityLabel="Bouncy ball"
+          accessibilityRole="button"
         />
       </TouchableWithoutFeedback>
     </Animated.View>

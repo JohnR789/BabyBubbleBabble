@@ -18,11 +18,16 @@ export default function SceneShell({ children, backgroundColor = '#f6f7ff', safe
   const navigation = useNavigation<StackNavigationProp<AppParamList>>();
   const insets = useSafeAreaInsets();
 
+  const backgroundStyle = { backgroundColor };
+  const containerStyle = [styles.container, backgroundStyle];
+  const lockBottom = safeArea ? 16 : insets.bottom + 16;
+  const lockWrapStyle = [styles.lockWrap, { bottom: lockBottom }];
+
   const content = (
-    <View style={[styles.container, { backgroundColor }]}>
+    <View style={containerStyle}>
       <MusicManager />
       <View style={styles.stage}>{children}</View>
-      <View style={[styles.lockWrap, { bottom: safeArea ? 16 : insets.bottom + 16 }]}>
+      <View style={lockWrapStyle}>
         <ParentalLock onUnlock={() => navigation.navigate(ROUTES.ParentalArea)} />
       </View>
     </View>
@@ -30,7 +35,7 @@ export default function SceneShell({ children, backgroundColor = '#f6f7ff', safe
 
   if (safeArea) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor }]}>
+      <SafeAreaView style={containerStyle}>
         {content}
       </SafeAreaView>
     );

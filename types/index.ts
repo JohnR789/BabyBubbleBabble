@@ -9,6 +9,7 @@ export type AppParamList = {
   PeekabooScene: undefined;
   PondScene: undefined;
   StackingScene: undefined;
+  ShapeSorterScene: undefined;
   ParentalArea: undefined;
 };
 

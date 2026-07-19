@@ -1,4 +1,3 @@
-// components/Bubble.js
 import React from 'react';
 import { Animated, TouchableWithoutFeedback, Image, StyleSheet, View } from 'react-native';
 
@@ -11,9 +10,50 @@ export default function Bubble({
   ringOpacity,
   size = 72,
   onPop,
-  tint,        // optional hex like '#9bd7ff'
-  sticker,     // optional require('...png')
+  tint,
+  sticker,
 }) {
+  const bubbleContainerStyle = {
+    position: 'absolute',
+    width: size,
+    height: size,
+    transform: [{ translateX: tx }, { translateY: ty }, { scale: scale || 1 }],
+    opacity: opacity || 1,
+  };
+
+  const auraStyle = [
+    styles.aura,
+    {
+      backgroundColor: tint ? hexToRgba(tint, 0.08) : 'rgba(255,255,255,0.08)',
+      width: size,
+      height: size,
+      borderRadius: size / 2,
+    },
+  ];
+
+  const ringStyle = [
+    styles.ring,
+    {
+      width: size,
+      height: size,
+      borderRadius: size / 2,
+      borderColor: tint ? hexToRgba(tint, 0.65) : 'rgba(255,255,255,0.65)',
+      transform: [{ scale: ringScale || 1 }],
+      opacity: ringOpacity || 0,
+    },
+  ];
+
+  const imageStyle = { width: size, height: size };
+
+  const stickerStyle = {
+    position: 'absolute',
+    width: size * 0.42,
+    height: size * 0.42,
+    left: size * 0.29,
+    top: size * 0.29,
+    opacity: 0.9,
+  };
+
   return (
     <TouchableWithoutFeedback
       onPress={onPop}
@@ -22,60 +62,30 @@ export default function Bubble({
       hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
     >
       <Animated.View
-        style={{
-          position: 'absolute',
-          width: size,
-          height: size,
-          transform: [{ translateX: tx }, { translateY: ty }, { scale: scale || 1 }],
-          opacity: opacity || 1,
-        }}
+        style={bubbleContainerStyle}
         pointerEvents="auto"
       >
-        {/* subtle tinted aura */}
         {tint ? (
           <View
-            style={[
-              styles.aura,
-              { backgroundColor: hexToRgba(tint, 0.08), width: size, height: size, borderRadius: size / 2 },
-            ]}
+            style={auraStyle}
           />
         ) : null}
 
-        {/* pop ring */}
         <Animated.View
-          style={[
-            styles.ring,
-            {
-              width: size,
-              height: size,
-              borderRadius: size / 2,
-              borderColor: tint ? hexToRgba(tint, 0.65) : 'rgba(255,255,255,0.65)',
-              transform: [{ scale: ringScale || 1 }],
-              opacity: ringOpacity || 0,
-            },
-          ]}
+          style={ringStyle}
           pointerEvents="none"
         />
 
-        {/* bubble sprite */}
         <Image
           source={require('../assets/images/bubbles/bubble1.png')}
-          style={{ width: size, height: size }}
+          style={imageStyle}
           resizeMode="contain"
         />
 
-        {/* optional sticker */}
         {sticker ? (
           <Image
             source={sticker}
-            style={{
-              position: 'absolute',
-              width: size * 0.42,
-              height: size * 0.42,
-              left: size * 0.29,
-              top: size * 0.29,
-              opacity: 0.9,
-            }}
+            style={stickerStyle}
             resizeMode="contain"
           />
         ) : null}
@@ -103,8 +113,3 @@ function hexToRgba(hex, alpha = 1) {
   const b = parseInt(normalized.substring(4, 6), 16);
   return `rgba(${r},${g},${b},${alpha})`;
 }
-
-
-
-
-

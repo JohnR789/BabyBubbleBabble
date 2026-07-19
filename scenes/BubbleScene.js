@@ -1,4 +1,7 @@
 // scenes/BubbleScene.js
+/* eslint-disable react-native/no-inline-styles */
+// The legacy Bubble Garden uses many dynamic, animation-driven inline styles.
+// It is scheduled for a full rewrite onto the design system in a future scene pass.
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,

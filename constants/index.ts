@@ -11,6 +11,7 @@ export const ROUTES = {
   PeekabooScene: 'PeekabooScene',
   PondScene: 'PondScene',
   StackingScene: 'StackingScene',
+  ShapeSorterScene: 'ShapeSorterScene',
   ParentalArea: 'ParentalArea',
 } as const;
 
@@ -24,6 +25,7 @@ export const SCENES = [
   { route: ROUTES.PeekabooScene, label: 'Peekaboo', icon: '🫣', premium: true },
   { route: ROUTES.PondScene, label: 'Pond', icon: '🐸', premium: true },
   { route: ROUTES.StackingScene, label: 'Stacking', icon: '🧱', premium: true },
+  { route: ROUTES.ShapeSorterScene, label: 'Shape Sorter', icon: '🔷', premium: true },
 ] as const;
 
 export const PARENTAL_GATE = {

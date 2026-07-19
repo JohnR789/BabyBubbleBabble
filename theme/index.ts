@@ -42,6 +42,7 @@ export const COLORS = {
   pond: '#c5e6f9',
   stacking: '#fcf8e8',
   animal: '#f6f7ff',
+  shapeSorter: '#f3f9ff',
 };
 
 export const TYPOGRAPHY = {

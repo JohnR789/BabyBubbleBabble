@@ -27,7 +27,8 @@ export default function StackingBlock({ img, color, label, x, y, stacked, onStac
             source={img}
             style={styles.blockImage}
             resizeMode="contain"
-            accessibilityLabel="Stacking block"
+            accessibilityLabel={`${label || 'Stacking'} block`}
+            accessibilityRole="button"
           />
         ) : (
           <View style={[styles.blockFallback, { backgroundColor: color }]}>
