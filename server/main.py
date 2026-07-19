@@ -21,6 +21,37 @@ from googleapiclient.errors import HttpError
 from pydantic import BaseModel, Field
 from pydantic_settings import BaseSettings
 
+
+def _load_combined_configs() -> None:
+    """Load combined config secrets and export them as environment variables."""
+    apple = os.environ.get("APPLE_APPSTORE_CONNECT_CONFIG")
+    if apple:
+        try:
+            cfg = json.loads(apple)
+            if "issuer_id" in cfg:
+                os.environ["APPLE_ISSUER_ID"] = cfg["issuer_id"]
+            if "key_id" in cfg:
+                os.environ["APPLE_KEY_ID"] = cfg["key_id"]
+            if "private_key" in cfg:
+                os.environ["APPLE_PRIVATE_KEY"] = cfg["private_key"]
+        except Exception:
+            pass
+    google = os.environ.get("GOOGLE_PLAY_SERVICE_ACCOUNT_CONFIG")
+    if google:
+        try:
+            cfg = json.loads(google)
+            if "service_account_json" in cfg:
+                os.environ["GOOGLE_SERVICE_ACCOUNT_JSON_B64"] = base64.b64encode(
+                    json.dumps(cfg["service_account_json"]).encode("utf-8")
+                ).decode("utf-8")
+            if "package_name" in cfg:
+                os.environ["GOOGLE_PACKAGE_NAME"] = cfg["package_name"]
+        except Exception:
+            pass
+
+
+_load_combined_configs()
+
 app = FastAPI(title="Baby Bubble Babble Purchase Verifier")
 
 
