@@ -1,0 +1,7 @@
+main.py
+pyproject.toml
+babybubblebabble_verifier.egg-info/PKG-INFO
+babybubblebabble_verifier.egg-info/SOURCES.txt
+babybubblebabble_verifier.egg-info/dependency_links.txt
+babybubblebabble_verifier.egg-info/requires.txt
+babybubblebabble_verifier.egg-info/top_level.txt

@@ -25,3 +25,5 @@ vendor__DISABLED/
 .fake
 .env
 .env.local
+server/.env
+server/.env.local
