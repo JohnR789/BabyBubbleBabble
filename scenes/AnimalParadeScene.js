@@ -1,107 +1,105 @@
-// scenes/AnimalParadeScene.js
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Animated,
-  Dimensions,
+  useWindowDimensions,
   TouchableWithoutFeedback,
-  StyleSheet,
   Image,
+  StyleSheet,
 } from 'react-native';
-import ParentalLock from '../components/ParentalLock';
+import SceneShell from '../components/SceneShell';
 import { playAnimalSound } from '../utils/SoundManager';
-import MusicManager from '../utils/MusicManager';
-import { useNavigation } from '@react-navigation/native';
-
-// Use PNGs instead of SVGs
-import duckPng from '../assets/images/animals/duck.png';
-import sheepPng from '../assets/images/animals/sheep.png';
-import cowPng from '../assets/images/animals/cow.png';
-import horsePng from '../assets/images/animals/horse.png';
-
-const { width, height } = Dimensions.get('window');
+import { IMAGES } from '../assets';
+import { COLORS } from '../theme';
 
 const ANIMAL_SIZE = 98;
 
-const animals = [
-  { key: 'duck', img: duckPng, sound: 'duck' },
-  { key: 'sheep', img: sheepPng, sound: 'sheep' },
-  { key: 'cow', img: cowPng, sound: 'cow' },
-  { key: 'horse', img: horsePng, sound: 'horse' },
+const ANIMALS = [
+  { key: 'duck', source: IMAGES.animals.duck, sound: 'duck' },
+  { key: 'sheep', source: IMAGES.animals.sheep, sound: 'sheep' },
+  { key: 'cow', source: IMAGES.animals.cow, sound: 'cow' },
+  { key: 'horse', source: IMAGES.animals.horse, sound: 'horse' },
 ];
 
 export default function AnimalParadeScene() {
-  const [positions] = useState(
-    animals.map(
-      () =>
-        new Animated.ValueXY({
-          x: -ANIMAL_SIZE - 22,
-          y: Math.random() * (height - (ANIMAL_SIZE + 22)),
-        }),
-    ),
-  );
-  const navigation = useNavigation();
+  const { width, height } = useWindowDimensions();
+  const [positions, setPositions] = useState([]);
 
   useEffect(() => {
-    positions.forEach((pos, idx) => {
-      Animated.loop(
+    if (width === 0 || height === 0) return;
+
+    const randomY = () => Math.random() * Math.max(1, height - ANIMAL_SIZE - 80);
+
+    const nextPositions = ANIMALS.map(() =>
+      new Animated.ValueXY({ x: -ANIMAL_SIZE - 22, y: randomY() }),
+    );
+    setPositions(nextPositions);
+
+    const stopFns = nextPositions.map((pos, idx) => {
+      const run = () => {
+        const targetY = randomY();
+        const duration = 6800 + idx * 1000;
         Animated.sequence([
           Animated.timing(pos, {
-            toValue: { x: width + ANIMAL_SIZE + 22, y: pos.y._value },
-            duration: 6800 + idx * 1000,
+            toValue: { x: width + ANIMAL_SIZE + 22, y: pos.__getValue().y },
+            duration,
             useNativeDriver: false,
           }),
           Animated.timing(pos, {
-            toValue: {
-              x: -ANIMAL_SIZE - 22,
-              y: Math.random() * (height - (ANIMAL_SIZE + 22)),
-            },
+            toValue: { x: -ANIMAL_SIZE - 22, y: targetY },
             duration: 0,
             useNativeDriver: false,
           }),
-        ]),
-      ).start();
+        ]).start(({ finished }) => {
+          if (finished) run();
+        });
+      };
+      run();
+      return () => pos.stopAnimation();
     });
-  }, [positions]);
+
+    return () => stopFns.forEach((stop) => stop());
+  }, [width, height]);
 
   function handleAnimalTap(animal) {
     playAnimalSound(animal.sound);
   }
 
   return (
-    <View style={styles.container}>
-      <MusicManager />
-      {animals.map((animal, i) => (
-        <Animated.View
-          key={animal.key}
-          style={[
-            styles.animalContainer,
-            { left: positions[i].x, top: positions[i].y },
-          ]}
-        >
-          <TouchableWithoutFeedback onPress={() => handleAnimalTap(animal)}>
-            <View accessible accessibilityLabel={`${animal.key} animal`}>
-              <Image
-                source={animal.img}
-                style={{ width: ANIMAL_SIZE, height: ANIMAL_SIZE }}
-                resizeMode="contain"
-              />
-            </View>
-          </TouchableWithoutFeedback>
-        </Animated.View>
-      ))}
-      <ParentalLock onUnlock={() => navigation.navigate('ParentalArea')} />
-    </View>
+    <SceneShell backgroundColor={COLORS.animal} safeArea={false}>
+      <View style={styles.stage}>
+        {ANIMALS.map((animal, i) =>
+          positions[i] ? (
+            <Animated.View
+              key={animal.key}
+              style={[styles.animalContainer, { left: positions[i].x, top: positions[i].y }]}
+            >
+              <TouchableWithoutFeedback onPress={() => handleAnimalTap(animal)}>
+                <View accessible accessibilityLabel={`${animal.key} animal`}>
+                  <Image
+                    source={animal.source}
+                    style={styles.animalImage}
+                    resizeMode="contain"
+                  />
+                </View>
+              </TouchableWithoutFeedback>
+            </Animated.View>
+          ) : null,
+        )}
+      </View>
+    </SceneShell>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  stage: {
     flex: 1,
-    backgroundColor: '#f6f7ff',
   },
   animalContainer: {
     position: 'absolute',
-    zIndex: 1,
+  },
+  animalImage: {
+    width: ANIMAL_SIZE,
+    height: ANIMAL_SIZE,
   },
 });

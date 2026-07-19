@@ -1,61 +1,64 @@
-import React, { useState, useEffect } from 'react';
-import { View, Dimensions, Animated, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Animated, useWindowDimensions, StyleSheet } from 'react-native';
 import Ball from '../components/Ball';
-import ParentalLock from '../components/ParentalLock';
+import SceneShell from '../components/SceneShell';
 import { playGiggleSound } from '../utils/SoundManager';
-import MusicManager from '../utils/MusicManager';
-import { useNavigation } from '@react-navigation/native';
+import { COLORS } from '../theme';
 
-const { width, height } = Dimensions.get('window');
-const BALL_COUNT = 8;
+const INITIAL_BALLS = 8;
+const MAX_BALLS = 15;
+const PADDING_X = 80;
+const PADDING_Y = 220;
+
+function createBall(maxX, maxY) {
+  return {
+    id: Math.random().toString(36).slice(2),
+    x: Math.random() * maxX,
+    y: Math.random() * maxY,
+  };
+}
 
 export default function BallScene() {
+  const { width, height } = useWindowDimensions();
   const [balls, setBalls] = useState([]);
-  const navigation = useNavigation();
+
+  const maxX = Math.max(0, width - PADDING_X);
+  const maxY = Math.max(0, height - PADDING_Y);
 
   useEffect(() => {
+    if (width === 0 || height === 0) return;
     setBalls(
-      Array.from({ length: BALL_COUNT }).map((_, i) => ({
-        id: i + Math.random(),
-        x: new Animated.Value(Math.random() * (width - 80)),
-        y: new Animated.Value(Math.random() * (height - 220)),
-      }))
+      Array.from({ length: INITIAL_BALLS }).map(() => createBall(maxX, maxY)),
     );
-  }, []);
+  }, [width, height, maxX, maxY]);
 
-  function handleBallBounce(id) {
+  function handleBallBounce() {
     playGiggleSound();
-    setBalls(prev =>
-      prev.length < 15
-        ? prev.concat({
-            id: Math.random(),
-            x: new Animated.Value(Math.random() * (width - 80)),
-            y: new Animated.Value(Math.random() * (height - 220)),
-          })
-        : prev
+    setBalls((prev) =>
+      prev.length < MAX_BALLS ? [...prev, createBall(maxX, maxY)] : prev,
     );
   }
 
   return (
-    <View style={styles.container}>
-      <MusicManager />
-      {balls.map(b => (
-        <Ball
-          key={b.id}
-          x={b.x}
-          y={b.y}
-          onBounce={() => handleBallBounce(b.id)}
-        />
-      ))}
-      <ParentalLock onUnlock={() => navigation.navigate('ParentalArea')} />
-    </View>
+    <SceneShell backgroundColor={COLORS.ball} safeArea={false}>
+      <View style={styles.stage}>
+        {balls.map((b) => (
+          <Ball
+            key={b.id}
+            x={new Animated.Value(b.x)}
+            y={new Animated.Value(b.y)}
+            maxX={maxX}
+            maxY={maxY}
+            onBounce={handleBallBounce}
+          />
+        ))}
+      </View>
+    </SceneShell>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  stage: {
     flex: 1,
-    backgroundColor: '#fff7e1',
   },
 });
-

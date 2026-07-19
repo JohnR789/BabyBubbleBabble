@@ -1,112 +1,125 @@
-import React, { useState } from 'react';
-import { View, Button, StyleSheet, Dimensions } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, TouchableOpacity, Text, useWindowDimensions, StyleSheet } from 'react-native';
 import StackingBlock from '../components/StackingBlock';
-import ParentalLock from '../components/ParentalLock';
+import SceneShell from '../components/SceneShell';
 import { playGiggleSound } from '../utils/SoundManager';
-import MusicManager from '../utils/MusicManager';
-import { useNavigation } from '@react-navigation/native';
+import { IMAGES } from '../assets';
+import { COLORS, TYPOGRAPHY, RADIUS, SPACING } from '../theme';
 
-// Import your PNG block images here
-import blockRed from '../assets/images/blocks/block_red.png';
-import blockBlue from '../assets/images/blocks/block_blue.png';
-import blockGreen from '../assets/images/blocks/block_green.png';
-import blockYellow from '../assets/images/blocks/block_yellow.png';
-import blockPurple from '../assets/images/blocks/block_purple.png';
-import blockPink from '../assets/images/blocks/block_pink.png';
+const BLOCKS = [
+  { id: 0, img: IMAGES.blocks.red, color: '#F87171', label: 'RED' },
+  { id: 1, img: IMAGES.blocks.blue, color: '#60A5FA', label: 'BLUE' },
+  { id: 2, img: IMAGES.blocks.green, color: '#34D399', label: 'GREEN' },
+  { id: 3, img: IMAGES.blocks.yellow, color: '#FBBF24', label: 'YELLOW' },
+  { id: 4, img: IMAGES.blocks.purple, color: '#A78BFA', label: 'PURPLE' },
+  { id: 5, img: IMAGES.blocks.pink, color: '#F472B6', label: 'PINK' },
+];
 
-const BLOCK_IMAGES = [blockRed, blockBlue, blockGreen, blockYellow, blockPurple, blockPink];
-const COLORS = ['#F87171', '#60A5FA', '#34D399', '#FBBF24', '#A78BFA', '#F472B6'];
-const LABELS = ['RED', 'BLUE', 'GREEN', 'YELLOW', 'PURPLE', 'PINK'];
-const { width, height } = Dimensions.get('window');
 const BLOCK_WIDTH = 90;
 const BLOCK_HEIGHT = 38;
-const TOWER_X = width / 2 - BLOCK_WIDTH / 2;
-const BOTTOM_Y = height - 80;
 
 export default function StackingScene() {
-  // All blocks with their properties, including images!
-  const [blocks, setBlocks] = useState(
-    Array.from({ length: 6 }).map((_, i) => ({
-      id: i,
-      img: BLOCK_IMAGES[i],     // <--- use cartoon PNGs!
-      color: COLORS[i],
-      label: LABELS[i],
-      stacked: false,
-      x: Math.random() * (width - BLOCK_WIDTH),
-      y: BOTTOM_Y - Math.random() * 60,
-    }))
-  );
-  const navigation = useNavigation();
+  const { width, height } = useWindowDimensions();
+  const [blocks, setBlocks] = useState([]);
 
-  // Stacked and unstacked split
-  const stackedBlocks = blocks.filter(b => b.stacked);
-  const unstackedBlocks = blocks.filter(b => !b.stacked);
+  const towerX = width / 2 - BLOCK_WIDTH / 2;
+  const bottomY = Math.max(120, height - 100);
 
-  function handleStack(id) {
-    playGiggleSound();
-    setBlocks(prev =>
-      prev.map((b, idx) =>
-        b.id === id
-          ? {
-              ...b,
-              x: TOWER_X,
-              y: BOTTOM_Y - BLOCK_HEIGHT * (stackedBlocks.length + 1),
-              stacked: true,
-            }
-          : b
-      )
+  useEffect(() => {
+    if (width === 0 || height === 0) return;
+    resetBlocks();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [width, height]);
+
+  function resetBlocks() {
+    setBlocks(
+      BLOCKS.map((b) => ({
+        ...b,
+        x: Math.random() * Math.max(0, width - BLOCK_WIDTH),
+        y: bottomY - Math.random() * 60,
+        stacked: false,
+      })),
     );
   }
 
-  function resetStack() {
-    setBlocks(blocks.map((b, i) => ({
-      ...b,
-      x: Math.random() * (width - BLOCK_WIDTH),
-      y: BOTTOM_Y - Math.random() * 60,
-      stacked: false,
-    })));
+  function handleStack(id) {
+    playGiggleSound();
+    setBlocks((prev) => {
+      const stackedCount = prev.filter((b) => b.stacked).length;
+      return prev.map((b) =>
+        b.id === id
+          ? {
+              ...b,
+              x: towerX,
+              y: bottomY - BLOCK_HEIGHT * (stackedCount + 1),
+              stacked: true,
+            }
+          : b,
+      );
+    });
   }
 
+  const stackedBlocks = blocks.filter((b) => b.stacked).sort((a, b) => a.id - b.id);
+  const unstackedBlocks = blocks.filter((b) => !b.stacked);
+
   return (
-    <View style={styles.container}>
-      <MusicManager />
-      {/* Stacked blocks (drawn first, bottom-up) */}
-      {stackedBlocks
-        .sort((a, b) => a.id - b.id)
-        .map((b, i) => (
+    <SceneShell backgroundColor={COLORS.stacking} safeArea>
+      <View style={styles.stage}>
+        <TouchableOpacity
+          style={styles.resetButton}
+          onPress={resetBlocks}
+          activeOpacity={0.8}
+          accessibilityLabel="Reset blocks"
+        >
+          <Text style={styles.resetText}>Reset Blocks</Text>
+        </TouchableOpacity>
+
+        {stackedBlocks.map((b, i) => (
           <StackingBlock
             key={b.id}
             img={b.img}
-            color={b.color}    // fallback support
-            label={b.label}    // fallback support
-            x={TOWER_X}
-            y={BOTTOM_Y - BLOCK_HEIGHT * (i + 1)}
+            color={b.color}
+            label={b.label}
+            x={towerX}
+            y={bottomY - BLOCK_HEIGHT * (i + 1)}
+            stacked
             onStack={() => {}}
           />
         ))}
-      {/* Unstacked blocks (can be tapped to stack) */}
-      {unstackedBlocks.map(b => (
-        <StackingBlock
-          key={b.id}
-          img={b.img}
-          color={b.color}
-          label={b.label}
-          x={b.x}
-          y={b.y}
-          onStack={() => handleStack(b.id)}
-        />
-      ))}
-      <Button title="Reset Blocks" onPress={resetStack} />
-      <ParentalLock onUnlock={() => navigation.navigate('ParentalArea')} />
-    </View>
+
+        {unstackedBlocks.map((b) => (
+          <StackingBlock
+            key={b.id}
+            img={b.img}
+            color={b.color}
+            label={b.label}
+            x={b.x}
+            y={b.y}
+            onStack={() => handleStack(b.id)}
+          />
+        ))}
+      </View>
+    </SceneShell>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  stage: {
     flex: 1,
-    backgroundColor: '#fcf8e8',
+  },
+  resetButton: {
+    position: 'absolute',
+    top: 16,
+    right: 16,
+    backgroundColor: COLORS.surface,
+    paddingVertical: SPACING.sm,
+    paddingHorizontal: SPACING.md,
+    borderRadius: RADIUS.md,
+    zIndex: 10,
+  },
+  resetText: {
+    color: COLORS.text,
+    fontSize: TYPOGRAPHY.sizes.small,
+    fontWeight: TYPOGRAPHY.weights.semibold,
   },
 });
-
-

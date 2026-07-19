@@ -1,24 +1,27 @@
 import React, { useRef } from 'react';
 import { Animated, TouchableWithoutFeedback, Image, View, Text, StyleSheet } from 'react-native';
 
-export default function StackingBlock({ img, color, label, x, y, onStack }) {
+export default function StackingBlock({ img, color, label, x, y, stacked, onStack }) {
   const scale = useRef(new Animated.Value(1)).current;
 
-  function handleStack() {
+  function triggerStack() {
+    if (stacked) return;
     Animated.sequence([
       Animated.timing(scale, { toValue: 1.15, duration: 110, useNativeDriver: true }),
       Animated.timing(scale, { toValue: 1, duration: 160, useNativeDriver: true }),
-    ]).start(onStack);
+    ]).start(({ finished }) => {
+      if (finished) onStack?.();
+    });
   }
 
   return (
     <Animated.View
       style={[
         styles.blockContainer,
-        { left: x, top: y, transform: [{ scale }] }
+        { left: x, top: y, transform: [{ scale }] },
       ]}
     >
-      <TouchableWithoutFeedback onPress={handleStack}>
+      <TouchableWithoutFeedback onPress={triggerStack}>
         {img ? (
           <Image
             source={img}
@@ -43,8 +46,6 @@ const styles = StyleSheet.create({
     height: 38,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 3,
-    zIndex: 2,
   },
   blockImage: {
     width: 90,
@@ -64,5 +65,3 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
-
-

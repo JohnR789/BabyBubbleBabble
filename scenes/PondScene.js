@@ -1,55 +1,53 @@
-import React, { useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { View, TouchableWithoutFeedback, Image, StyleSheet } from 'react-native';
-import ParentalLock from '../components/ParentalLock';
+import SceneShell from '../components/SceneShell';
 import { playPopSound } from '../utils/SoundManager';
-import MusicManager from '../utils/MusicManager';
-import { useNavigation } from '@react-navigation/native';
+import { IMAGES } from '../assets';
+import { COLORS } from '../theme';
+
+const FROG_SIZE = 72;
 
 export default function PondScene() {
-  const [frog, setFrog] = useState(false);
-  const navigation = useNavigation();
+  const [frog, setFrog] = useState(null);
+  const timeoutRef = useRef(null);
 
-  function handleTouch(evt) {
+  const handleTouch = useCallback((evt) => {
     const { locationX, locationY } = evt.nativeEvent;
-    setFrog({ x: locationX, y: locationY });
+    clearTimeout(timeoutRef.current);
+    setFrog({
+      x: locationX - FROG_SIZE / 2,
+      y: locationY - FROG_SIZE / 2,
+    });
     playPopSound();
-    setTimeout(() => setFrog(false), 1200);
-  }
+    timeoutRef.current = setTimeout(() => {
+      setFrog(null);
+    }, 1200);
+  }, []);
 
   return (
-    <View style={styles.container}>
-      <MusicManager />
+    <SceneShell backgroundColor={COLORS.pond} safeArea={false}>
       <TouchableWithoutFeedback onPress={handleTouch}>
-        <View style={styles.flex}>
+        <View style={styles.stage}>
           {frog && (
             <Image
-              source={require('../assets/images/animals/frog.png')}
-              style={[
-                styles.frog,
-                { left: frog.x - 36, top: frog.y - 36 }
-              ]}
+              source={IMAGES.animals.frog}
+              style={[styles.frog, { left: frog.x, top: frog.y }]}
+              accessibilityLabel="Frog"
             />
           )}
         </View>
       </TouchableWithoutFeedback>
-      <ParentalLock onUnlock={() => navigation.navigate('ParentalArea')} />
-    </View>
+    </SceneShell>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#c5e6f9',
-  },
-  flex: {
+  stage: {
     flex: 1,
   },
   frog: {
     position: 'absolute',
-    width: 72,
-    height: 72,
-    zIndex: 2,
+    width: FROG_SIZE,
+    height: FROG_SIZE,
   },
 });
-

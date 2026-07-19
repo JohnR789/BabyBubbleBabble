@@ -22,7 +22,7 @@ const lullabies = [
   SOUNDS.music.QuackQuackPlaytime,
 ];
 
-export default function MusicManager({ forceOn, volume = 0.6, log = false }) {
+export default function MusicManager({ forceOn = undefined, volume = 0.6, log = false }) {
   const ctx = useContext(SettingsContext);
   const musicOn = forceOn ?? (ctx?.musicOn ?? false);
 

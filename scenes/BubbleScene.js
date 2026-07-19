@@ -16,12 +16,12 @@ import {
 } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 
 import Bubble from '../components/Bubble';
-import ParentalLock from '../components/ParentalLock';
+import SceneShell from '../components/SceneShell';
 import { playPopSound } from '../utils/SoundManager';
-import MusicManager from '../utils/MusicManager';
+import { IMAGES } from '../assets';
 
 /** ------------------------------------------------------------------
  *  Optional native deps (only render if the native view manager exists)
@@ -105,12 +105,12 @@ const UP_BIAS = -Math.PI / 2;
 
 const STICKER_PROB = 0.12;
 const STICKERS = [
-  require('../assets/images/animals/duck.png'),
-  require('../assets/images/animals/cow.png'),
-  require('../assets/images/animals/frog.png'),
-  require('../assets/images/animals/sheep.png'),
-  require('../assets/images/animals/horse.png'),
-  require('../assets/images/animals/bunny.png'),
+  IMAGES.animals.duck,
+  IMAGES.animals.cow,
+  IMAGES.animals.frog,
+  IMAGES.animals.sheep,
+  IMAGES.animals.horse,
+  IMAGES.animals.bunny,
 ];
 
 const TINTS = ['#9bd7ff', '#ffd7f2', '#ffe1a6', '#c9ffd2', '#e6ddff'];
@@ -755,7 +755,7 @@ const ShotsLayer = React.memo(function ShotsLayer({ shots }) {
 
 /** =============================== Scene ============================ */
 export default function BubbleScene() {
-  const navigation = useNavigation();
+
   const { width, height } = useWindowDimensions();
 
   const reducedMotion = useReducedMotion();
@@ -1248,9 +1248,9 @@ export default function BubbleScene() {
 
   /** ------------------------------ Render --------------------------- */
   return (
-    <GestureDetector gesture={gesture}>
-      <View style={[styles.container, { backgroundColor: skyColor }]}>
-        <MusicManager />
+    <SceneShell backgroundColor={skyColor} safeArea={false}>
+      <GestureDetector gesture={gesture}>
+        <View style={[styles.container, { backgroundColor: skyColor }]}>
 
         {/* Cross-faded sky gradient (safe fallback if no native gradient) */}
         <SkyGradientCrossfade width={width} height={height} t={t} />
@@ -1342,9 +1342,9 @@ export default function BubbleScene() {
           <Text style={styles.badgeText}>⭐ You did it!</Text>
         </Animated.View>
 
-        <ParentalLock onUnlock={() => navigation.navigate('ParentalArea')} />
-      </View>
-    </GestureDetector>
+        </View>
+      </GestureDetector>
+    </SceneShell>
   );
 }
 
