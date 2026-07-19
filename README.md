@@ -1,6 +1,6 @@
 # Baby Bubble Babble
 
-A gentle, offline-first sensory playground for infants and toddlers.
+A gentle, offline-first Montessori-inspired playground for infants and toddlers.
 
 ## Stack
 
@@ -10,6 +10,7 @@ A gentle, offline-first sensory playground for infants and toddlers.
 - React Navigation
 - React Native Reanimated + Gesture Handler
 - expo-audio for background music and sound effects
+- expo-speech for spoken letter/number/encouragement feedback
 - expo-iap (with safe mock fallback) for premium store integration
 - AsyncStorage for parent settings and premium state
 
@@ -52,14 +53,20 @@ npx expo export -p web
   - `expo-iap` integration with a built-in fallback to a mock provider for tests, Expo Go, and local preview builds.
   - `services/purchaseVerifier.ts` posts receipts to a backend endpoint before unlocking premium.
   - Parent-only subscribe, restore, and trial controls in `ParentalArea`.
-  - Scene gating: free scenes (Bubbles, Balls, Animal Parade) and premium scenes (Night Sky, Peekaboo, Pond, Stacking, Shape Sorter, Animal Sounds).
-- Migrated scenes (Animal Parade, Ball, Night Sky, Peekaboo, Pond, Stacking) using the theme and asset registry.
-- New Montessori-inspired scenes:
-  - `ShapeSorterScene` — drag-and-drop shape matching with spring snap and celebration.
-  - `AnimalSoundsScene` — tap-to-hear animal sound cards for language and auditory matching.
-- Bubble Garden fully rewritten onto `SceneShell` with `StyleSheet` and no inline styles.
+  - Scene gating: free scenes (Pouring, Color Sort, Sound Match, Letter Garden, Counting) and premium scenes (Flower Arrange, Button Frame, Puzzle Map, Shape Trace, Spoon Transfer).
+- 10 Montessori-inspired play areas:
+  - `PouringScene` — press and hold the pitcher to fill the cup.
+  - `ColorSortScene` — drag colored balls into matching bowls.
+  - `SoundMatchScene` — tap sound cylinders to find matching pairs.
+  - `LetterGardenScene` — tap flowers to hear letter sounds.
+  - `CountingScene` — drag beads onto a rod and count aloud.
+  - `FlowerArrangeScene` — drag flowers into a vase.
+  - `ButtonFrameScene` — tap each button through its hole.
+  - `PuzzleMapScene` — drag colored puzzle pieces into their slots.
+  - `ShapeTraceScene` — tap numbered dots in order to trace shapes.
+  - `SpoonTransferScene` — drag pom-poms from one bowl to another.
+- AI-generated pastel scene illustrations and generated sound effects (pop, snap, plop, scoop, water pour, rattle, bell, drum, success, ambient music).
 - App icon (`assets/icon.png`), Android adaptive icon (`assets/adaptive-icon.png`), and splash screen (`assets/splash.png`).
-- Robust audio manager with SFX mute support, randomized pop sounds, and scene-specific effect sounds (bounce, splash, snap, clack, chime).
 - Light haptic feedback on every toddler tap via `expo-haptics`.
 
 ## Production store setup
