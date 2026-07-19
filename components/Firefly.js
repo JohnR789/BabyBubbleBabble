@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
-import { Animated, TouchableWithoutFeedback, Image, StyleSheet } from 'react-native';
+import { Animated, Pressable, Image, StyleSheet } from 'react-native';
 import { IMAGES } from '../assets';
+import { lightImpact } from '../utils/haptics';
 
 export default function Firefly({ x, y, onCatch }) {
   const twinkle = useRef(new Animated.Value(0.75)).current;
@@ -23,14 +24,9 @@ export default function Firefly({ x, y, onCatch }) {
 
   return (
     <Animated.View style={[styles.fireflyContainer, { left: x, top: y, opacity: twinkle }]}>
-      <TouchableWithoutFeedback onPress={onCatch}>
-        <Image
-          source={IMAGES.icons.firefly}
-          style={styles.fireflyImage}
-          accessibilityLabel="Firefly"
-          accessibilityRole="button"
-        />
-      </TouchableWithoutFeedback>
+      <Pressable onPress={() => { lightImpact(); onCatch?.(); }} accessibilityLabel="Firefly" accessibilityRole="button">
+        <Image source={IMAGES.icons.firefly} style={styles.fireflyImage} />
+      </Pressable>
     </Animated.View>
   );
 }

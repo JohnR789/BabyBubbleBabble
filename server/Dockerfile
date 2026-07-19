@@ -1,9 +1,7 @@
 FROM python:3.11-slim
 
 WORKDIR /app
-
-COPY pyproject.toml main.py ./
-COPY server ./server
+COPY . /app
 
 RUN pip install --no-cache-dir .
 

@@ -1,11 +1,9 @@
-import { useEffect, useRef, useContext, useCallback } from 'react';
+import { useEffect, useRef, useContext, useMemo } from 'react';
 import { AppState } from 'react-native';
-import { Audio } from 'expo-av';
+import { useAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import { SettingsContext } from '../SettingsContext';
 import { SOUNDS } from '../assets';
-import { ensureAudioMode } from './SoundManager';
 
-/** Toggle local debugging (kept false to silence logs) */
 const DEBUG_MUSIC = false;
 const makeLogger = (flag) => (...a) => { if (flag) console.log('[Music]', ...a); };
 
@@ -25,121 +23,77 @@ const lullabies = [
 export default function MusicManager({ forceOn = undefined, volume = 0.6, log = false }) {
   const ctx = useContext(SettingsContext);
   const musicOn = forceOn ?? (ctx?.musicOn ?? false);
-
   const mlog = makeLogger(DEBUG_MUSIC || log);
 
-  const soundRef = useRef(null);
-  const indexRef = useRef(0);
-  const mountedRef = useRef(true);
   const appStateRef = useRef(AppState.currentState);
-  const switchingRef = useRef(false);
+  const indexRef = useRef(0);
 
-  const cleanup = useCallback(async () => {
-    const s = soundRef.current;
-    soundRef.current = null;
-    if (s) {
-      try { s.setOnPlaybackStatusUpdate(null); } catch {}
-      try { await s.stopAsync(); } catch {}
-      try { await s.unloadAsync(); } catch {}
-    }
+  const initialSource = useMemo(
+    () => lullabies[Math.floor(Math.random() * lullabies.length)],
+    [],
+  );
+  const player = useAudioPlayer(initialSource);
+
+  // Configure audio mode once on mount.
+  useEffect(() => {
+    setAudioModeAsync({
+      playsInSilentMode: true,
+      interruptionMode: 'mixWithOthers',
+    }).catch(() => {});
   }, []);
 
-  const nextIndex = useCallback((i) => (i + 1) % lullabies.length, []);
-
-  const loadAndPlay = useCallback(async (i) => {
-    if (!mountedRef.current || !musicOn) return;
-    if (switchingRef.current) return;
-    switchingRef.current = true;
-
-    await ensureAudioMode();
-    await cleanup();
-
-    const s = new Audio.Sound();
-
-    s.setOnPlaybackStatusUpdate((status) => {
-      if (!mountedRef.current) return;
-      if (!status.isLoaded) {
-        if (status.error) {
-          mlog('status error; advancing', status.error);
-          loadAndPlay(nextIndex(indexRef.current)).catch(() => {});
-        }
-        return;
-      }
-      if (status.didJustFinish && musicOn) {
-        loadAndPlay(nextIndex(indexRef.current)).catch(() => {});
-      }
-    });
-
-    try {
-      indexRef.current = i;
-      await s.loadAsync(lullabies[i], { shouldPlay: false, volume }, false);
-      soundRef.current = s;
-      await s.setVolumeAsync(volume);
-      await s.playAsync();
-    } catch {
-      try { await cleanup(); } catch {}
-      if (mountedRef.current && musicOn) {
-        loadAndPlay(nextIndex(i)).catch(() => {});
-      }
-    } finally {
-      switchingRef.current = false;
-    }
-  }, [musicOn, volume, cleanup, mlog, nextIndex]);
-
-  // Handle mount/unmount + AppState (pause on background, resume on active)
+  // Apply volume and non-looping settings.
   useEffect(() => {
-    mountedRef.current = true;
+    player.loop = false;
+    player.volume = volume;
+  }, [player, volume]);
 
-    const onChange = async (state) => {
-      appStateRef.current = state;
-      const s = soundRef.current;
+  // Play/pause and advance tracks.
+  useEffect(() => {
+    const playIndex = (i) => {
+      indexRef.current = i;
+      mlog('play', i);
+      try {
+        player.replace(lullabies[i]);
+        player.play();
+      } catch {}
+    };
 
-      if (state !== 'active') {
-        try { await s?.pauseAsync(); } catch {}
-      } else {
-        if (!musicOn) return;
-        if (s) {
-          try {
-            const st = await s.getStatusAsync();
-            if (st.isLoaded && !st.isPlaying) {
-              await s.playAsync();
-            }
-          } catch {}
-        } else {
-          indexRef.current = Math.floor(Math.random() * lullabies.length);
-          loadAndPlay(indexRef.current).catch(() => {});
-        }
+    const advance = () => {
+      const next = (indexRef.current + 1) % lullabies.length;
+      playIndex(next);
+    };
+
+    const onPlaybackStatus = (status) => {
+      if (status?.didJustFinish && musicOn) {
+        advance();
       }
     };
 
-    const sub = AppState.addEventListener('change', onChange);
-    return () => { mountedRef.current = false; sub?.remove(); cleanup().catch(() => {}); };
-  }, [musicOn, loadAndPlay, cleanup]);
+    const statusSub = player.addListener('playbackStatusUpdate', onPlaybackStatus);
 
-  // React to musicOn toggle
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (musicOn) {
-        await ensureAudioMode();
-        if (appStateRef.current === 'active') {
-          indexRef.current = Math.floor(Math.random() * lullabies.length);
-          if (!cancelled) loadAndPlay(indexRef.current).catch(() => {});
-        }
-      } else {
-        await cleanup();
+    const onAppState = (state) => {
+      appStateRef.current = state;
+      if (state !== 'active') {
+        try { player.pause(); } catch {}
+      } else if (musicOn) {
+        playIndex(indexRef.current);
       }
-    })();
-    return () => { cancelled = true; };
-  }, [musicOn, loadAndPlay, cleanup]);
+    };
+    const appSub = AppState.addEventListener('change', onAppState);
 
-  // React to volume changes
-  useEffect(() => {
-    const s = soundRef.current;
-    (async () => {
-      try { await s?.setVolumeAsync(volume); } catch {}
-    })();
-  }, [volume]);
+    if (musicOn && appStateRef.current === 'active') {
+      playIndex(indexRef.current);
+    } else {
+      try { player.pause(); } catch {}
+    }
+
+    return () => {
+      try { statusSub?.remove(); } catch {}
+      appSub?.remove();
+      try { player.pause(); } catch {}
+    };
+  }, [musicOn, player, mlog]);
 
   return null;
 }

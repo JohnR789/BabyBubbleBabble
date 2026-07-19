@@ -3,7 +3,7 @@ import {
   View,
   Animated,
   useWindowDimensions,
-  TouchableWithoutFeedback,
+  Pressable,
   Image,
   StyleSheet,
 } from 'react-native';
@@ -19,6 +19,7 @@ const ANIMALS = [
   { key: 'sheep', source: IMAGES.animals.sheep, sound: 'sheep' },
   { key: 'cow', source: IMAGES.animals.cow, sound: 'cow' },
   { key: 'horse', source: IMAGES.animals.horse, sound: 'horse' },
+  { key: 'bunny', source: IMAGES.animals.bunny, sound: 'bunny' },
 ];
 
 export default function AnimalParadeScene() {
@@ -74,15 +75,17 @@ export default function AnimalParadeScene() {
               key={animal.key}
               style={[styles.animalContainer, { left: positions[i].x, top: positions[i].y }]}
             >
-              <TouchableWithoutFeedback onPress={() => handleAnimalTap(animal)}>
-                <View accessible accessibilityLabel={`${animal.key} animal`}>
-                  <Image
-                    source={animal.source}
-                    style={styles.animalImage}
-                    resizeMode="contain"
-                  />
-                </View>
-              </TouchableWithoutFeedback>
+              <Pressable
+                onPress={() => handleAnimalTap(animal)}
+                accessibilityLabel={`${animal.key} animal`}
+                accessibilityRole="button"
+              >
+                <Image
+                  source={animal.source}
+                  style={styles.animalImage}
+                  resizeMode="contain"
+                />
+              </Pressable>
             </Animated.View>
           ) : null,
         )}

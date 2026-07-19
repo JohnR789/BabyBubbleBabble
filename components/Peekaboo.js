@@ -1,11 +1,13 @@
 import React, { useRef, useEffect, useCallback } from 'react';
-import { Animated, TouchableWithoutFeedback, Image, StyleSheet } from 'react-native';
+import { Animated, Pressable, Image, StyleSheet } from 'react-native';
+import { lightImpact } from '../utils/haptics';
 
 export default function Peekaboo({ x, y, img, onPeek }) {
   const scale = useRef(new Animated.Value(0)).current;
   const animRef = useRef(null);
 
   const showAnim = useCallback(() => {
+    lightImpact();
     animRef.current?.stop();
     scale.setValue(0);
     const anim = Animated.sequence([
@@ -25,9 +27,9 @@ export default function Peekaboo({ x, y, img, onPeek }) {
 
   return (
     <Animated.View style={[styles.peekabooContainer, { left: x, top: y, transform: [{ scale }] }]}>
-      <TouchableWithoutFeedback onPress={showAnim}>
-        <Image source={img} style={styles.peekabooImage} accessibilityLabel="Peekaboo" accessibilityRole="button" />
-      </TouchableWithoutFeedback>
+      <Pressable onPress={showAnim} accessibilityLabel="Peekaboo" accessibilityRole="button">
+        <Image source={img} style={styles.peekabooImage} />
+      </Pressable>
     </Animated.View>
   );
 }

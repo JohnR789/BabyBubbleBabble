@@ -9,7 +9,7 @@ A gentle, offline-first sensory playground for infants and toddlers.
 - TypeScript
 - React Navigation
 - React Native Reanimated + Gesture Handler
-- expo-av for audio
+- expo-audio for background music and sound effects
 - expo-iap (with safe mock fallback) for premium store integration
 - AsyncStorage for parent settings and premium state
 
@@ -37,8 +37,9 @@ npm run test           # Jest tests
 ## Build verification
 
 ```sh
-npx expo export -p ios --no-minify -c
-npx expo export -p android --no-minify -c
+npx expo export -p ios
+npx expo export -p android
+npx expo export -p web
 ```
 
 ## What's in this branch
@@ -73,3 +74,5 @@ See [`docs/STORE_SETUP.md`](docs/STORE_SETUP.md) for:
 ## Known limitations
 
 - The purchase service falls back to a mock implementation when `expo-iap`'s native module is not available. Real store receipt validation and server-side entitlement checks are architected but require a hosted verifier and production store credentials.
+- The optional FastAPI receipt verifier is in `server/` and can be deployed to Fly.io manually; it is not on the critical path for local development.
+- Web-specific React Native warnings (`useNativeDriver`, `shadow*`) are benign on mobile targets and only appear when running in the browser for local testing.

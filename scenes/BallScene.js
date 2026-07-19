@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Animated, useWindowDimensions, StyleSheet } from 'react-native';
 import Ball from '../components/Ball';
 import SceneShell from '../components/SceneShell';
-import { playGiggleSound } from '../utils/SoundManager';
+import { playBounceSound } from '../utils/SoundManager';
 import { COLORS } from '../theme';
 
 const INITIAL_BALLS = 8;
@@ -33,7 +33,7 @@ export default function BallScene() {
   }, [width, height, maxX, maxY]);
 
   function handleBallBounce() {
-    playGiggleSound();
+    playBounceSound();
     setBalls((prev) =>
       prev.length < MAX_BALLS ? [...prev, createBall(maxX, maxY)] : prev,
     );

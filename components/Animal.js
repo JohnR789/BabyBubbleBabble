@@ -1,5 +1,6 @@
 import React from 'react';
-import { Animated, TouchableWithoutFeedback, Image, StyleSheet } from 'react-native';
+import { Animated, Pressable, Image, StyleSheet } from 'react-native';
+import { lightImpact } from '../utils/haptics';
 
 export default function Animal({ img, x, y, onTap, style }) {
   return (
@@ -8,13 +9,9 @@ export default function Animal({ img, x, y, onTap, style }) {
       style,
       { left: x, top: y }
     ]}>
-      <TouchableWithoutFeedback onPress={onTap}>
-        <Image
-          source={img}
-          style={styles.animalImage}
-          accessibilityLabel="Cute animal"
-        />
-      </TouchableWithoutFeedback>
+      <Pressable onPress={() => { lightImpact(); onTap?.(); }} accessibilityLabel="Cute animal" accessibilityRole="button">
+        <Image source={img} style={styles.animalImage} />
+      </Pressable>
     </Animated.View>
   );
 }

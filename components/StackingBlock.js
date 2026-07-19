@@ -1,11 +1,13 @@
 import React, { useRef } from 'react';
-import { Animated, TouchableWithoutFeedback, Image, View, Text, StyleSheet } from 'react-native';
+import { Animated, Pressable, Image, View, Text, StyleSheet } from 'react-native';
+import { lightImpact } from '../utils/haptics';
 
 export default function StackingBlock({ img, color, label, x, y, stacked, onStack }) {
   const scale = useRef(new Animated.Value(1)).current;
 
   function triggerStack() {
     if (stacked) return;
+    lightImpact();
     Animated.sequence([
       Animated.timing(scale, { toValue: 1.15, duration: 110, useNativeDriver: true }),
       Animated.timing(scale, { toValue: 1, duration: 160, useNativeDriver: true }),
@@ -21,21 +23,19 @@ export default function StackingBlock({ img, color, label, x, y, stacked, onStac
         { left: x, top: y, transform: [{ scale }] },
       ]}
     >
-      <TouchableWithoutFeedback onPress={triggerStack}>
+      <Pressable
+        onPress={triggerStack}
+        accessibilityLabel={`${label || 'Stacking'} block`}
+        accessibilityRole="button"
+      >
         {img ? (
-          <Image
-            source={img}
-            style={styles.blockImage}
-            resizeMode="contain"
-            accessibilityLabel={`${label || 'Stacking'} block`}
-            accessibilityRole="button"
-          />
+          <Image source={img} style={styles.blockImage} resizeMode="contain" />
         ) : (
           <View style={[styles.blockFallback, { backgroundColor: color }]}>
             <Text style={styles.blockLabel}>{label}</Text>
           </View>
         )}
-      </TouchableWithoutFeedback>
+      </Pressable>
     </Animated.View>
   );
 }

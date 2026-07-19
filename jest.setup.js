@@ -6,28 +6,27 @@ jest.mock('react-native-reanimated', () =>
   require('react-native-reanimated/mock'),
 );
 
-// expo-av relies on the native "ExponentAV" module, which is unavailable in Jest.
-jest.mock('expo-av', () => {
-  class Sound {
-    async loadAsync() {}
-    async unloadAsync() {}
-    async playAsync() {}
-    async stopAsync() {}
-    async pauseAsync() {}
-    async replayAsync() {}
-    async setPositionAsync() {}
-    async setVolumeAsync() {}
-    async getStatusAsync() {
-      return { isLoaded: false };
-    }
-    setOnPlaybackStatusUpdate() {}
-  }
+// expo-audio relies on native modules unavailable in Jest.
+jest.mock('expo-audio', () => {
+  const createMockPlayer = () => ({
+    play: jest.fn(),
+    pause: jest.fn(),
+    replace: jest.fn(),
+    seekTo: jest.fn(async () => {}),
+    remove: jest.fn(),
+    loop: false,
+    volume: 1,
+    addListener: jest.fn(() => ({ remove: jest.fn() })),
+  });
+
+  const defaultPlayer = createMockPlayer();
+
   return {
-    Audio: {
-      Sound,
-      setAudioModeAsync: jest.fn(async () => {}),
-      INTERRUPTION_MODE_IOS_DO_NOT_MIX: 1,
-    },
+    __esModule: true,
+    useAudioPlayer: jest.fn(() => defaultPlayer),
+    createAudioPlayer: jest.fn(() => createMockPlayer()),
+    useAudioPlayerStatus: jest.fn(() => ({ didJustFinish: false, playing: false, isLoaded: true })),
+    setAudioModeAsync: jest.fn(async () => {}),
   };
 });
 
@@ -42,5 +41,8 @@ jest.mock('@react-native-async-storage/async-storage', () => ({
 }));
 
 // Optional native add-ons that scenes load defensively; keep them quiet in tests.
-jest.mock('expo-haptics', () => ({}), { virtual: true });
+jest.mock('expo-haptics', () => ({
+  impactAsync: jest.fn(async () => {}),
+  ImpactFeedbackStyle: { Light: 'light' },
+}), { virtual: true });
 jest.mock('expo-sensors', () => ({ Accelerometer: { addListener: () => ({ remove() {} }), setUpdateInterval: () => {} } }), { virtual: true });

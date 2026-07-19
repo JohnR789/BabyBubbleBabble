@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
-import { Animated, TouchableWithoutFeedback, Image, StyleSheet } from 'react-native';
+import { Animated, Pressable, Image, StyleSheet } from 'react-native';
 import { IMAGES } from '../assets';
+import { lightImpact } from '../utils/haptics';
 
 export default function Ball({ x, y, maxX, maxY, onBounce }) {
   const scale = useRef(new Animated.Value(1)).current;
@@ -24,6 +25,7 @@ export default function Ball({ x, y, maxX, maxY, onBounce }) {
   }, [x, y, maxX, maxY]);
 
   function bounceAnim() {
+    lightImpact();
     animRef.current?.stop();
     Animated.sequence([
       Animated.timing(scale, { toValue: 1.3, duration: 110, useNativeDriver: true }),
@@ -36,14 +38,9 @@ export default function Ball({ x, y, maxX, maxY, onBounce }) {
 
   return (
     <Animated.View style={[styles.ballContainer, { left: x, top: y, transform: [{ scale }] }]}>
-      <TouchableWithoutFeedback onPress={bounceAnim}>
-        <Image
-          source={IMAGES.balls.ball1}
-          style={styles.ballImage}
-          accessibilityLabel="Bouncy ball"
-          accessibilityRole="button"
-        />
-      </TouchableWithoutFeedback>
+      <Pressable onPress={bounceAnim} accessibilityLabel="Bouncy ball" accessibilityRole="button">
+        <Image source={IMAGES.balls.ball1} style={styles.ballImage} />
+      </Pressable>
     </Animated.View>
   );
 }

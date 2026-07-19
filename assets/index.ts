@@ -39,6 +39,8 @@ export const IMAGES = {
 export const SOUNDS = {
   pops: {
     pop1: require('./sounds/pops/pop1.mp3'),
+    pop2: require('./sounds/pops/pop2.mp3'),
+    pop3: require('./sounds/pops/pop3.mp3'),
   },
   giggles: {
     giggle1: require('./sounds/giggles/giggle1.mp3'),
@@ -49,6 +51,14 @@ export const SOUNDS = {
     frog: require('./sounds/animal_sounds/frog.mp3'),
     horse: require('./sounds/animal_sounds/horse.wav'),
     cow: require('./sounds/animal_sounds/cow.wav'),
+    bunny: require('./sounds/animal_sounds/bunny.mp3'),
+  },
+  effects: {
+    bounce: require('./sounds/effects/bounce.mp3'),
+    splash: require('./sounds/effects/splash.mp3'),
+    snap: require('./sounds/effects/snap.mp3'),
+    clack: require('./sounds/effects/clack.mp3'),
+    chime: require('./sounds/effects/chime.mp3'),
   },
   music: {
     TinyToes: require('./sounds/music/TinyToes.mp3'),
@@ -92,6 +102,14 @@ export const AUDIO_LICENSES: Record<string, string> = {
   'animal_sounds/frog.mp3': 'repository-owned / generated placeholder',
   'animal_sounds/horse.wav': 'repository-owned / generated placeholder',
   'animal_sounds/cow.wav': 'repository-owned / generated placeholder',
+  'animal_sounds/bunny.mp3': 'repository-owned / generated placeholder',
+  'pops/pop2.mp3': 'repository-owned / generated placeholder',
+  'pops/pop3.mp3': 'repository-owned / generated placeholder',
+  'effects/bounce.mp3': 'repository-owned / generated placeholder',
+  'effects/splash.mp3': 'repository-owned / generated placeholder',
+  'effects/snap.mp3': 'repository-owned / generated placeholder',
+  'effects/clack.mp3': 'repository-owned / generated placeholder',
+  'effects/chime.mp3': 'repository-owned / generated placeholder',
   'music/TinyToes.mp3': 'repository-owned / generated placeholder',
   'music/SunnyDays.mp3': 'repository-owned / generated placeholder',
   'music/SunnyDayParade.mp3': 'repository-owned / generated placeholder',

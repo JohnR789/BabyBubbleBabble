@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, TouchableOpacity, Text, useWindowDimensions, StyleSheet } from 'react-native';
+import { View, Pressable, Text, useWindowDimensions, StyleSheet } from 'react-native';
 import StackingBlock from '../components/StackingBlock';
 import SceneShell from '../components/SceneShell';
-import { playGiggleSound } from '../utils/SoundManager';
+import { playClackSound, playGiggleSound } from '../utils/SoundManager';
 import { IMAGES } from '../assets';
 import { COLORS, TYPOGRAPHY, RADIUS, SPACING } from '../theme';
 
@@ -43,9 +43,12 @@ export default function StackingScene() {
   }
 
   function handleStack(id) {
-    playGiggleSound();
+    playClackSound();
     setBlocks((prev) => {
       const stackedCount = prev.filter((b) => b.stacked).length;
+      if (stackedCount + 1 === BLOCKS.length) {
+        playGiggleSound();
+      }
       return prev.map((b) =>
         b.id === id
           ? {
@@ -65,14 +68,14 @@ export default function StackingScene() {
   return (
     <SceneShell backgroundColor={COLORS.stacking} safeArea>
       <View style={styles.stage}>
-        <TouchableOpacity
+        <Pressable
           style={styles.resetButton}
           onPress={resetBlocks}
-          activeOpacity={0.8}
           accessibilityLabel="Reset blocks"
+          accessibilityRole="button"
         >
           <Text style={styles.resetText}>Reset Blocks</Text>
-        </TouchableOpacity>
+        </Pressable>
 
         {stackedBlocks.map((b, i) => (
           <StackingBlock

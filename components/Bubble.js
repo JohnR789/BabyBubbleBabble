@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
-import { Animated, TouchableWithoutFeedback, Image, StyleSheet, View } from 'react-native';
+import { Animated, Pressable, Image, StyleSheet, View } from 'react-native';
+import { lightImpact } from '../utils/haptics';
 
 export default function Bubble({
   tx,
@@ -15,6 +16,7 @@ export default function Bubble({
 
   function handlePop() {
     if (popAnimRef.current) return;
+    lightImpact();
     popAnimRef.current = Animated.parallel([
       Animated.timing(scale, { toValue: 1.4, duration: 120, useNativeDriver: true }),
       Animated.timing(opacity, { toValue: 0, duration: 120, useNativeDriver: true }),
@@ -65,7 +67,7 @@ export default function Bubble({
   };
 
   return (
-    <TouchableWithoutFeedback
+    <Pressable
       onPress={handlePop}
       accessibilityRole="button"
       accessibilityLabel="bubble"
@@ -95,7 +97,7 @@ export default function Bubble({
           />
         ) : null}
       </Animated.View>
-    </TouchableWithoutFeedback>
+    </Pressable>
   );
 }
 

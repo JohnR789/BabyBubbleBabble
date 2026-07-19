@@ -1,7 +1,8 @@
 import React, { useCallback, useRef, useState } from 'react';
-import { View, TouchableWithoutFeedback, Image, StyleSheet } from 'react-native';
+import { View, Pressable, Image, StyleSheet } from 'react-native';
 import SceneShell from '../components/SceneShell';
-import { playPopSound } from '../utils/SoundManager';
+import { playSplashSound } from '../utils/SoundManager';
+import { lightImpact } from '../utils/haptics';
 import { IMAGES } from '../assets';
 import { COLORS } from '../theme';
 
@@ -18,7 +19,8 @@ export default function PondScene() {
       x: locationX - FROG_SIZE / 2,
       y: locationY - FROG_SIZE / 2,
     });
-    playPopSound();
+    playSplashSound();
+    lightImpact();
     timeoutRef.current = setTimeout(() => {
       setFrog(null);
     }, 1200);
@@ -26,17 +28,17 @@ export default function PondScene() {
 
   return (
     <SceneShell backgroundColor={COLORS.pond} safeArea={false}>
-      <TouchableWithoutFeedback onPress={handleTouch}>
+      <Pressable onPressIn={handleTouch} style={styles.stage}>
         <View style={styles.stage}>
-          {frog && (
+          {frog ? (
             <Image
               source={IMAGES.animals.frog}
               style={[styles.frog, { left: frog.x, top: frog.y }]}
               accessibilityLabel="Frog"
             />
-          )}
+          ) : null}
         </View>
-      </TouchableWithoutFeedback>
+      </Pressable>
     </SceneShell>
   );
 }

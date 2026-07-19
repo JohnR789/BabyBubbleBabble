@@ -19,7 +19,14 @@
     "plugins": [
       "expo-font",
       "expo-asset",
-      "expo-iap"
+      "expo-iap",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ]
     ],
     "ios": {
       "bundleIdentifier": "com.anonymous.babybubblebabble",

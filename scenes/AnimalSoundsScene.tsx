@@ -12,6 +12,7 @@ import SceneShell from '../components/SceneShell';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../theme';
 import { IMAGES } from '../assets';
 import { playAnimalSound } from '../utils/SoundManager';
+import { lightImpact } from '../utils/haptics';
 
 const ANIMALS = [
   { key: 'duck', label: 'Duck', sound: 'duck', image: IMAGES.animals.duck, tint: '#ffdfba' },
@@ -19,7 +20,7 @@ const ANIMALS = [
   { key: 'frog', label: 'Frog', sound: 'frog', image: IMAGES.animals.frog, tint: '#b5ead7' },
   { key: 'cow', label: 'Cow', sound: 'cow', image: IMAGES.animals.cow, tint: '#ffd7f2' },
   { key: 'horse', label: 'Horse', sound: 'horse', image: IMAGES.animals.horse, tint: '#c7ceea' },
-  { key: 'bunny', label: 'Bunny', sound: 'frog', image: IMAGES.animals.bunny, tint: '#fcf8e8' },
+  { key: 'bunny', label: 'Bunny', sound: 'bunny', image: IMAGES.animals.bunny, tint: '#fcf8e8' },
 ] as const;
 
 function AnimalCard({ animal }: { animal: (typeof ANIMALS)[number] }) {
@@ -47,6 +48,7 @@ function AnimalCard({ animal }: { animal: (typeof ANIMALS)[number] }) {
 
   const handlePress = useCallback(() => {
     setActive(true);
+    lightImpact();
     playAnimalSound(animal.sound);
     setTimeout(() => setActive(false), 900);
   }, [animal]);

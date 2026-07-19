@@ -14,7 +14,8 @@ import Animated, {
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import SceneShell from '../components/SceneShell';
 import { COLORS, TYPOGRAPHY, SPACING } from '../theme';
-import { playPopSound, playGiggleSound } from '../utils/SoundManager';
+import { playSnapSound, playGiggleSound } from '../utils/SoundManager';
+import { lightImpact } from '../utils/haptics';
 
 const SHAPE_SIZE = 80;
 const SLOT_SIZE = 100;
@@ -159,7 +160,8 @@ export default function ShapeSorterScene() {
       const next = { ...prev, [key]: true };
       return next;
     });
-    playPopSound();
+    lightImpact();
+    playSnapSound();
   }, []);
 
   useEffect(() => {

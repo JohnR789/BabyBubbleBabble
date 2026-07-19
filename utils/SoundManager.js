@@ -1,95 +1,44 @@
-import { Platform } from 'react-native';
-import { Audio } from 'expo-av';
+import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
 import { SOUNDS } from '../assets';
 
-/** Toggle for local debugging (kept false to silence logs) */
 const DEBUG_AUDIO = false;
 const debugLog = (...args) => { if (DEBUG_AUDIO) console.log('[SoundManager]', ...args); };
 
-const SOURCES = {
-  pop: SOUNDS.pops.pop1,
-  giggle: SOUNDS.giggles.giggle1,
-};
+const POP_KEYS = ['pop1', 'pop2', 'pop3'];
 
-/* ------------------------------------------------------------------ */
-/* Cache (key -> { sound, loaded, loading })                           */
-/* ------------------------------------------------------------------ */
-const cache = new Map();
 let audioModeSet = false;
 let sfxEnabled = true;
+const cache = new Map();
 
-/* ------------------------------------------------------------------ */
-/* Audio mode                                                         */
-/* ------------------------------------------------------------------ */
-export async function ensureAudioMode() {
+async function ensureAudioMode() {
   if (audioModeSet) return;
-
   try {
-    if (Platform.OS === 'ios') {
-      await Audio.setAudioModeAsync({
-        playsInSilentModeIOS: true,
-        allowsRecordingIOS: false,
-        interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_DO_NOT_MIX,
-        staysActiveInBackground: false,
-      });
-    } else if (Platform.OS === 'android') {
-      await Audio.setAudioModeAsync({
-        shouldDuckAndroid: false,
-        playThroughEarpieceAndroid: false,
-        staysActiveInBackground: false,
-      });
-    } else {
-      await Audio.setAudioModeAsync({});
-    }
-
+    await setAudioModeAsync({
+      playsInSilentMode: true,
+      interruptionMode: 'mixWithOthers',
+    });
     audioModeSet = true;
     debugLog('Audio mode configured');
   } catch {
-    // Swallow to keep logs clean in production
+    // Swallow to keep play functional in unsupported environments.
   }
 }
 
-/* ------------------------------------------------------------------ */
-/* Load / replay helpers                                              */
-/* ------------------------------------------------------------------ */
-async function ensureLoaded(key, src) {
-  await ensureAudioMode();
-
-  let entry = cache.get(key);
-  if (!entry) {
-    entry = { sound: new Audio.Sound(), loaded: false, loading: null };
-    cache.set(key, entry);
+function getPlayer(key, src) {
+  if (!cache.has(key)) {
+    debugLog('Creating player for', key);
+    cache.set(key, createAudioPlayer(src));
   }
-
-  if (!entry.loaded) {
-    if (!entry.loading) {
-      entry.loading = entry.sound
-        .loadAsync(src, { shouldPlay: false, volume: 1.0 }, false)
-        .then(() => { entry.loaded = true; })
-        .catch(() => {
-          entry.loading = null;
-          entry.loaded = false;
-          throw new Error('load failed');
-        });
-    }
-    await entry.loading;
-  }
-
-  return entry.sound;
+  return cache.get(key);
 }
 
-async function safeReplay(sound) {
+function replay(player) {
   try {
-    await sound.replayAsync();
-  } catch {
-    try { await sound.setPositionAsync(0); } catch {}
-    try { await sound.playAsync(); } catch {}
-  }
+    player.seekTo(0).catch(() => {});
+    player.play();
+  } catch {}
 }
 
-/* ------------------------------------------------------------------ */
-/* Public API                                                         */
-/* ------------------------------------------------------------------ */
 export function setSfxEnabled(enabled) {
   sfxEnabled = enabled;
 }
@@ -100,26 +49,26 @@ export function isSfxEnabled() {
 
 export async function preloadCoreSfx() {
   try {
-    await Promise.all([
-      ensureLoaded('pop', SOURCES.pop),
-      ensureLoaded('giggle', SOURCES.giggle),
-    ]);
+    await ensureAudioMode();
+    getPlayer('giggle', SOUNDS.giggles.giggle1);
+    POP_KEYS.forEach((k) => getPlayer(`pop:${k}`, SOUNDS.pops[k]));
   } catch {}
 }
 
 export async function playPopSound() {
   if (!sfxEnabled) return;
   try {
-    const s = await ensureLoaded('pop', SOURCES.pop);
-    await safeReplay(s);
+    await ensureAudioMode();
+    const key = POP_KEYS[Math.floor(Math.random() * POP_KEYS.length)];
+    replay(getPlayer(`pop:${key}`, SOUNDS.pops[key]));
   } catch {}
 }
 
 export async function playGiggleSound() {
   if (!sfxEnabled) return;
   try {
-    const s = await ensureLoaded('giggle', SOURCES.giggle);
-    await safeReplay(s);
+    await ensureAudioMode();
+    replay(getPlayer('giggle', SOUNDS.giggles.giggle1));
   } catch {}
 }
 
@@ -128,16 +77,55 @@ export async function playAnimalSound(name) {
   const src = SOUNDS.animalSounds[name];
   if (!src) return;
   try {
-    const s = await ensureLoaded(name, src);
-    await safeReplay(s);
+    await ensureAudioMode();
+    replay(getPlayer(`animal:${name}`, src));
+  } catch {}
+}
+
+export async function playBounceSound() {
+  if (!sfxEnabled) return;
+  try {
+    await ensureAudioMode();
+    replay(getPlayer('effect:bounce', SOUNDS.effects.bounce));
+  } catch {}
+}
+
+export async function playSplashSound() {
+  if (!sfxEnabled) return;
+  try {
+    await ensureAudioMode();
+    replay(getPlayer('effect:splash', SOUNDS.effects.splash));
+  } catch {}
+}
+
+export async function playSnapSound() {
+  if (!sfxEnabled) return;
+  try {
+    await ensureAudioMode();
+    replay(getPlayer('effect:snap', SOUNDS.effects.snap));
+  } catch {}
+}
+
+export async function playClackSound() {
+  if (!sfxEnabled) return;
+  try {
+    await ensureAudioMode();
+    replay(getPlayer('effect:clack', SOUNDS.effects.clack));
+  } catch {}
+}
+
+export async function playChimeSound() {
+  if (!sfxEnabled) return;
+  try {
+    await ensureAudioMode();
+    replay(getPlayer('effect:chime', SOUNDS.effects.chime));
   } catch {}
 }
 
 export async function unloadAll() {
-  for (const [, entry] of cache) {
+  for (const [, player] of cache) {
     try {
-      if (entry.loading) await entry.loading;
-      await entry.sound.unloadAsync();
+      player.remove();
     } catch {}
   }
   cache.clear();

@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { View, useWindowDimensions, StyleSheet, Animated } from 'react-native';
 import Firefly from '../components/Firefly';
 import SceneShell from '../components/SceneShell';
-import { playPopSound } from '../utils/SoundManager';
+import { playChimeSound } from '../utils/SoundManager';
 import { COLORS } from '../theme';
 
 const FIREFLY_COUNT = 7;
@@ -32,7 +32,7 @@ export default function NightSkyScene() {
   }, [refresh]);
 
   function handleCatch(id) {
-    playPopSound();
+    playChimeSound();
     setFireflies((prev) =>
       prev.map((f) => (f.id === id ? { ...f, caught: true } : f)),
     );
@@ -46,16 +46,15 @@ export default function NightSkyScene() {
   return (
     <SceneShell backgroundColor={COLORS.night} safeArea={false}>
       <View style={styles.stage}>
-        {fireflies.map(
-          (f) =>
-            !f.caught && (
-              <Firefly
-                key={f.id}
-                x={f.x}
-                y={f.y}
-                onCatch={() => handleCatch(f.id)}
-              />
-            ),
+        {fireflies.map((f) =>
+          !f.caught ? (
+            <Firefly
+              key={f.id}
+              x={f.x}
+              y={f.y}
+              onCatch={() => handleCatch(f.id)}
+            />
+          ) : null,
         )}
       </View>
     </SceneShell>
