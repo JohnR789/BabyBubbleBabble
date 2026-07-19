@@ -59,7 +59,8 @@ npx expo export -p web
   - `AnimalSoundsScene` — tap-to-hear animal sound cards for language and auditory matching.
 - Bubble Garden fully rewritten onto `SceneShell` with `StyleSheet` and no inline styles.
 - App icon (`assets/icon.png`), Android adaptive icon (`assets/adaptive-icon.png`), and splash screen (`assets/splash.png`).
-- Robust audio manager with SFX mute support.
+- Robust audio manager with SFX mute support, randomized pop sounds, and scene-specific effect sounds (bounce, splash, snap, clack, chime).
+- Light haptic feedback on every toddler tap via `expo-haptics`.
 
 ## Production store setup
 
