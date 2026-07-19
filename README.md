@@ -49,15 +49,27 @@ npx expo export -p android --no-minify -c
 - Gated parent area using `ParentalLock` on the home screen.
 - Premium/subscription architecture (`PremiumContext.tsx`, `services/purchase.ts`):
   - `expo-iap` integration with a built-in fallback to a mock provider for tests, Expo Go, and local preview builds.
+  - `services/purchaseVerifier.ts` posts receipts to a backend endpoint before unlocking premium.
   - Parent-only subscribe, restore, and trial controls in `ParentalArea`.
-  - Scene gating: free scenes (Bubbles, Balls, Animal Parade) and premium scenes (Night Sky, Peekaboo, Pond, Stacking, Shape Sorter).
+  - Scene gating: free scenes (Bubbles, Balls, Animal Parade) and premium scenes (Night Sky, Peekaboo, Pond, Stacking, Shape Sorter, Animal Sounds).
 - Migrated scenes (Animal Parade, Ball, Night Sky, Peekaboo, Pond, Stacking) using the theme and asset registry.
-- New Montessori-inspired `ShapeSorterScene` with drag-and-drop shape matching, gentle audio feedback, and celebration.
+- New Montessori-inspired scenes:
+  - `ShapeSorterScene` — drag-and-drop shape matching with spring snap and celebration.
+  - `AnimalSoundsScene` — tap-to-hear animal sound cards for language and auditory matching.
+- Bubble Garden fully rewritten onto `SceneShell` with `StyleSheet` and no inline styles.
 - App icon (`assets/icon.png`), Android adaptive icon (`assets/adaptive-icon.png`), and splash screen (`assets/splash.png`).
-- Bubble Garden scene refactored to remove remote network dependencies and child-inappropriate terminology.
 - Robust audio manager with SFX mute support.
+
+## Production store setup
+
+See [`docs/STORE_SETUP.md`](docs/STORE_SETUP.md) for:
+
+- Backend receipt verification endpoint contract.
+- Apple App Store Connect API key setup.
+- Google Play service account setup.
+- Product IDs and bundle identifier configuration.
+- Environment variable setup (`EXPO_PUBLIC_PURCHASE_VERIFICATION_URL`).
 
 ## Known limitations
 
-- The legacy Bubble Garden scene disables the inline-style lint rule while it awaits a full rewrite onto the design system.
-- The purchase service falls back to a mock implementation when `expo-iap`'s native module is not available. Real store receipt validation and server-side entitlement checks should be wired up for production release.
+- The purchase service falls back to a mock implementation when `expo-iap`'s native module is not available. Real store receipt validation and server-side entitlement checks are architected but require a hosted verifier and production store credentials.

@@ -23,3 +23,5 @@ vendor__DISABLED/
 *.bak
 
 .fake
+.env
+.env.local

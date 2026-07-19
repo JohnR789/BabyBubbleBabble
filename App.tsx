@@ -10,6 +10,7 @@ import Home from './scenes/Home';
 import BubbleScene from './scenes/BubbleScene';
 import BallScene from './scenes/BallScene';
 import AnimalParadeScene from './scenes/AnimalParadeScene';
+import AnimalSoundsScene from './scenes/AnimalSoundsScene';
 import NightSkyScene from './scenes/NightSkyScene';
 import PeekabooScene from './scenes/PeekabooScene';
 import PondScene from './scenes/PondScene';
@@ -45,6 +46,7 @@ export default function App() {
               <Stack.Screen name="BubbleScene" options={{ title: 'Bubbles' }} component={BubbleScene} />
               <Stack.Screen name="BallScene" options={{ title: 'Balls' }} component={BallScene} />
               <Stack.Screen name="AnimalParadeScene" options={{ title: 'Animal Parade' }} component={AnimalParadeScene} />
+              <Stack.Screen name="AnimalSoundsScene" options={{ title: 'Animal Sounds' }} component={AnimalSoundsScene} />
               <Stack.Screen name="NightSkyScene" options={{ title: 'Night Sky' }} component={NightSkyScene} />
               <Stack.Screen name="PeekabooScene" options={{ title: 'Peekaboo' }} component={PeekabooScene} />
               <Stack.Screen name="PondScene" options={{ title: 'Pond' }} component={PondScene} />

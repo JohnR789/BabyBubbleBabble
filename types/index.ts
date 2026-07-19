@@ -5,6 +5,7 @@ export type AppParamList = {
   BubbleScene: undefined;
   BallScene: undefined;
   AnimalParadeScene: undefined;
+  AnimalSoundsScene: undefined;
   NightSkyScene: undefined;
   PeekabooScene: undefined;
   PondScene: undefined;

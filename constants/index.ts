@@ -7,6 +7,7 @@ export const ROUTES = {
   BubbleScene: 'BubbleScene',
   BallScene: 'BallScene',
   AnimalParadeScene: 'AnimalParadeScene',
+  AnimalSoundsScene: 'AnimalSoundsScene',
   NightSkyScene: 'NightSkyScene',
   PeekabooScene: 'PeekabooScene',
   PondScene: 'PondScene',
@@ -26,6 +27,7 @@ export const SCENES = [
   { route: ROUTES.PondScene, label: 'Pond', icon: '🐸', premium: true },
   { route: ROUTES.StackingScene, label: 'Stacking', icon: '🧱', premium: true },
   { route: ROUTES.ShapeSorterScene, label: 'Shape Sorter', icon: '🔷', premium: true },
+  { route: ROUTES.AnimalSoundsScene, label: 'Animal Sounds', icon: '🔊', premium: true },
 ] as const;
 
 export const PARENTAL_GATE = {

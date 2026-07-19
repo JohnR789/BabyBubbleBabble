@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { purchaseService } from './services/purchase';
+import { purchaseService, type PurchaseResult } from './services/purchase';
+import { verifyPurchaseOnServer, getPurchasePlatform } from './services/purchaseVerifier';
 
 const STORAGE_KEY = '@BBB:premium';
 
@@ -47,6 +48,17 @@ function isActive(state: PremiumState) {
   return true;
 }
 
+function stateFromResult(result: PurchaseResult): PremiumState {
+  return {
+    isPremium: true,
+    status: 'purchased',
+    expiresAt: result.expiresAt ?? null,
+    productId: result.productId ?? null,
+    purchaseToken: result.purchaseToken ?? null,
+    error: null,
+  };
+}
+
 export function PremiumProvider({ children }: { children: React.ReactNode }) {
   const [state, setState] = useState<PremiumState>(defaultState);
 
@@ -73,21 +85,48 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)).catch(() => {});
   }, []);
 
+  const completePurchase = useCallback(async (result: PurchaseResult) => {
+    const token = result.purchaseToken ?? '';
+    const productId = result.productId ?? '';
+    const verification = await verifyPurchaseOnServer({
+      productId,
+      purchaseToken: token,
+      transactionId: token,
+      platform: getPurchasePlatform(),
+    });
+
+    if (!verification.valid) {
+      setState((prev) => ({
+        ...prev,
+        isPremium: isActive(prev),
+        status: 'error',
+        error: verification.error ?? 'Purchase verification failed.',
+      }));
+      return false;
+    }
+
+    if (result.purchase && purchaseService.finishPurchase) {
+      try {
+        await purchaseService.finishPurchase(result.purchase);
+      } catch {
+        // Best-effort finish; the store will redeliver if needed.
+      }
+    }
+
+    persist(stateFromResult({
+      ...result,
+      expiresAt: verification.expiresAt ?? result.expiresAt,
+    }));
+    return true;
+  }, [persist]);
+
   const purchase = useCallback(
     async (productId: string) => {
       setState((prev) => ({ ...prev, status: 'loading', error: null }));
       try {
         const result = await purchaseService.purchase(productId);
         if (result.ok) {
-          const next: PremiumState = {
-            isPremium: true,
-            status: 'purchased',
-            expiresAt: result.expiresAt ?? null,
-            productId: result.productId ?? productId,
-            purchaseToken: result.purchaseToken ?? null,
-            error: null,
-          };
-          persist(next);
+          await completePurchase(result);
         } else {
           setState((prev) => ({
             ...prev,
@@ -105,7 +144,7 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
         }));
       }
     },
-    [persist],
+    [completePurchase],
   );
 
   const restore = useCallback(async () => {
@@ -113,15 +152,7 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
     try {
       const result = await purchaseService.restore();
       if (result.ok) {
-        const next: PremiumState = {
-          isPremium: true,
-          status: 'purchased',
-          expiresAt: result.expiresAt ?? null,
-          productId: result.productId ?? null,
-          purchaseToken: result.purchaseToken ?? null,
-          error: null,
-        };
-        persist(next);
+        await completePurchase(result);
       } else {
         setState((prev) => ({
           ...prev,
@@ -138,7 +169,7 @@ export function PremiumProvider({ children }: { children: React.ReactNode }) {
         error: 'Restore failed. Please try again.',
       }));
     }
-  }, [persist]);
+  }, [completePurchase]);
 
   const activateTrial = useCallback(
     (days = 7) => {

@@ -25,12 +25,14 @@ export interface PurchaseResult {
   purchaseToken?: string;
   expiresAt?: number;
   error?: string;
+  purchase?: any;
 }
 
 export interface PurchaseService {
   getProducts(): Promise<Product[]>;
   purchase(productId: string): Promise<PurchaseResult>;
   restore(): Promise<PurchaseResult>;
+  finishPurchase?(purchase: any): Promise<void>;
 }
 
 const ALL_PRODUCT_IDS = Object.values(PREMIUM_PRODUCTS);
@@ -83,6 +85,9 @@ export function createMockPurchaseService(): PurchaseService {
         purchaseToken: `mock-token-${Date.now()}`,
         expiresAt: addYears(1),
       };
+    },
+    async finishPurchase() {
+      // Mock purchases do not need to be finished with the store.
     },
   };
 }
@@ -163,12 +168,12 @@ export function createRealPurchaseService(): PurchaseService {
         if (!purchase) {
           return { ok: false, error: 'Purchase was cancelled or not returned.' };
         }
-        await mod.finishTransaction({ purchase, isConsumable: false });
         return {
           ok: true,
           productId: purchase.productId ?? productId,
           purchaseToken: purchase.purchaseToken ?? purchase.transactionId ?? `iap-token-${Date.now()}`,
           expiresAt: addYears(1),
+          purchase,
         };
       } catch (error: any) {
         if (
@@ -195,18 +200,25 @@ export function createRealPurchaseService(): PurchaseService {
           productId: found.productId,
           purchaseToken: found.purchaseToken ?? found.transactionId ?? `iap-token-${Date.now()}`,
           expiresAt: addYears(1),
+          purchase: found,
         };
       } catch {
         return getFallback().restore();
+      }
+    },
+    async finishPurchase(purchase: any) {
+      const mod = await ensureIap();
+      if (!mod) return;
+      try {
+        await mod.finishTransaction({ purchase, isConsumable: false });
+      } catch {
+        // Best-effort: if finishing fails the purchase will be re-delivered.
       }
     },
   };
 }
 
 export function createPurchaseService(): PurchaseService {
-  // In production this should use the real store. The real implementation
-  // automatically degrades to a mock provider when the native module is absent,
-  // so tests, Expo Go, and preview builds keep working.
   return createRealPurchaseService();
 }
 

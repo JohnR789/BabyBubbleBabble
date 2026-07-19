@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { Animated, TouchableWithoutFeedback, Image, StyleSheet, View } from 'react-native';
 
 export default function Bubble({
@@ -6,19 +6,30 @@ export default function Bubble({
   ty,
   scale,
   opacity,
-  ringScale,
-  ringOpacity,
   size = 72,
   onPop,
   tint,
   sticker,
 }) {
+  const popAnimRef = useRef(null);
+
+  function handlePop() {
+    if (popAnimRef.current) return;
+    popAnimRef.current = Animated.parallel([
+      Animated.timing(scale, { toValue: 1.4, duration: 120, useNativeDriver: true }),
+      Animated.timing(opacity, { toValue: 0, duration: 120, useNativeDriver: true }),
+    ]);
+    popAnimRef.current.start(({ finished }) => {
+      if (finished && onPop) onPop();
+    });
+  }
+
   const bubbleContainerStyle = {
     position: 'absolute',
     width: size,
     height: size,
-    transform: [{ translateX: tx }, { translateY: ty }, { scale: scale || 1 }],
-    opacity: opacity || 1,
+    transform: [{ translateX: tx }, { translateY: ty }, { scale }],
+    opacity,
   };
 
   const auraStyle = [
@@ -38,8 +49,7 @@ export default function Bubble({
       height: size,
       borderRadius: size / 2,
       borderColor: tint ? hexToRgba(tint, 0.65) : 'rgba(255,255,255,0.65)',
-      transform: [{ scale: ringScale || 1 }],
-      opacity: ringOpacity || 0,
+      opacity: 0,
     },
   ];
 
@@ -56,7 +66,7 @@ export default function Bubble({
 
   return (
     <TouchableWithoutFeedback
-      onPress={onPop}
+      onPress={handlePop}
       accessibilityRole="button"
       accessibilityLabel="bubble"
       hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
@@ -66,15 +76,10 @@ export default function Bubble({
         pointerEvents="auto"
       >
         {tint ? (
-          <View
-            style={auraStyle}
-          />
+          <View style={auraStyle} />
         ) : null}
 
-        <Animated.View
-          style={ringStyle}
-          pointerEvents="none"
-        />
+        <Animated.View style={ringStyle} pointerEvents="none" />
 
         <Image
           source={require('../assets/images/bubbles/bubble1.png')}
