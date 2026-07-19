@@ -27,3 +27,4 @@ vendor__DISABLED/
 .env.local
 server/.env
 server/.env.local
+server/*.egg-info
