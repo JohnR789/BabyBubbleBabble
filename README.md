@@ -10,7 +10,7 @@ A gentle, offline-first sensory playground for infants and toddlers.
 - React Navigation
 - React Native Reanimated + Gesture Handler
 - expo-av for audio
-- AsyncStorage for parent settings
+- AsyncStorage for parent settings and premium state
 
 ## Quick start
 
@@ -44,13 +44,18 @@ npx expo export -p android --no-minify -c
 
 - Central theme (`theme/`) and asset/audio registry (`assets/index.ts`, `constants/`).
 - Persistent parent settings (`SettingsContext.tsx`) with music, SFX, reduced motion, and night mode toggles.
+- Reusable `SceneShell` with background music, safe-area handling, and parental gate for every scene.
 - Gated parent area using `ParentalLock` on the home screen.
-- Premium home grid with pastel scene cards.
+- Premium/subscription architecture (`PremiumContext.tsx`, `services/purchase.ts`):
+  - Mock store provider for safe local testing and builds.
+  - Parent-only subscribe, restore, and trial controls in `ParentalArea`.
+  - Scene gating: free scenes (Bubbles, Balls, Animal Parade) and premium scenes (Night Sky, Peekaboo, Pond, Stacking).
+- Migrated scenes (Animal Parade, Ball, Night Sky, Peekaboo, Pond, Stacking) using the theme and asset registry.
 - Bubble Garden scene refactored to remove remote network dependencies and child-inappropriate terminology.
 - Robust audio manager with SFX mute support.
 
 ## Known limitations
 
-- Bubble Garden still has inline styles from the original implementation; they are flagged as lint warnings but do not fail the build.
-- Some scenes (Ball, Animal Parade, Night Sky, Peekaboo, Pond, Stacking) are functional but not yet rebuilt to the new theme and asset registry.
-- Premium/subscription systems, full parent dashboard insights, and new scenes are planned for follow-up work.
+- Bubble Garden still contains inline styles from the original implementation; they are flagged as lint warnings but do not fail the build.
+- The purchase service is a mock implementation. Swapping in a real provider such as `expo-iap` or `react-native-purchases` (RevenueCat) is supported by the `PurchaseService` interface.
+- Real store receipt validation and server-side entitlement checks are not wired up yet.

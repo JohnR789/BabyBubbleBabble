@@ -17,6 +17,7 @@ import StackingScene from './scenes/StackingScene';
 import ParentalArea from './ParentalArea';
 
 import { SettingsProvider } from './SettingsContext';
+import { PremiumProvider } from './PremiumContext';
 import { COLORS } from './theme';
 import type { AppParamList } from './types';
 
@@ -27,8 +28,9 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <SettingsProvider>
-          <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
-          <NavigationContainer>
+          <PremiumProvider>
+            <StatusBar barStyle="dark-content" backgroundColor={COLORS.background} />
+            <NavigationContainer>
             <Stack.Navigator
               initialRouteName="Home"
               screenOptions={{
@@ -49,6 +51,7 @@ export default function App() {
               <Stack.Screen name="ParentalArea" options={{ title: 'Parents' }} component={ParentalArea} />
             </Stack.Navigator>
           </NavigationContainer>
+          </PremiumProvider>
         </SettingsProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
