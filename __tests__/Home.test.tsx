@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Home from '../scenes/Home';
 import { SettingsProvider } from '../SettingsContext';
 import { PremiumProvider } from '../PremiumContext';
+import { SCENES } from '../constants';
 
 const Stack = createStackNavigator();
 
@@ -25,10 +26,21 @@ function Nav() {
   );
 }
 
+function textMatches(node: any, text: string) {
+  const children = node.children;
+  if (typeof children === 'string') return children.includes(text);
+  if (Array.isArray(children)) {
+    return children.some((child: any) => typeof child === 'string' && child.includes(text));
+  }
+  return false;
+}
+
 function findByText(root: any, text: string) {
-  return root.findAll((node: any) =>
-    node.children?.some((child: any) => typeof child === 'string' && child.includes(text))
-  )[0];
+  const found = root.findAll((node: any) => textMatches(node, text))[0];
+  if (!found) {
+    throw new Error(`Text "${text}" not found`);
+  }
+  return found;
 }
 
 describe('Home', () => {
@@ -39,7 +51,19 @@ describe('Home', () => {
     });
     const root = tree!.root;
     expect(() => findByText(root, 'Baby Bubble Babble')).not.toThrow();
-    expect(() => findByText(root, 'Bubbles')).not.toThrow();
-    expect(() => findByText(root, 'Shape Sorter')).not.toThrow();
+    expect(() => findByText(root, 'Pouring')).not.toThrow();
+    expect(() => findByText(root, 'Color Sort')).not.toThrow();
+    expect(() => findByText(root, 'Parental Area (Tap 5x)')).not.toThrow();
+  });
+
+  it('lists every configured scene', async () => {
+    let tree: ReactTestRenderer.ReactTestRenderer | undefined;
+    await act(async () => {
+      tree = ReactTestRenderer.create(<Nav />);
+    });
+    const root = tree!.root;
+    for (const scene of SCENES) {
+      expect(() => findByText(root, scene.label)).not.toThrow();
+    }
   });
 });

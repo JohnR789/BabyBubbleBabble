@@ -50,3 +50,19 @@ jest.mock('expo-speech', () => ({
   speak: jest.fn(),
   stop: jest.fn(),
 }), { virtual: true });
+
+jest.mock('react-native-safe-area-context', () => {
+  const React = require('react');
+  const insets = { top: 0, bottom: 0, left: 0, right: 0 };
+  const SafeAreaInsetsContext = React.createContext(insets);
+  const SafeAreaFrameContext = React.createContext({ x: 0, y: 0, width: 800, height: 600 });
+  return {
+    __esModule: true,
+    SafeAreaProvider: ({ children }) => React.createElement(SafeAreaInsetsContext.Provider, { value: insets }, children),
+    SafeAreaView: ({ children, style }) => React.createElement('View', { style }, children),
+    useSafeAreaInsets: () => insets,
+    useSafeAreaFrame: () => ({ x: 0, y: 0, width: 800, height: 600 }),
+    SafeAreaInsetsContext,
+    SafeAreaFrameContext,
+  };
+});

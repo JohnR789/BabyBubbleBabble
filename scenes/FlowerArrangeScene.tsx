@@ -20,20 +20,28 @@ const FLOWERS = [
   { id: 3, label: 'Purple', color: '#e6ddff' },
 ];
 
-function DraggableFlower({
-  flower,
-  slotX,
-  slotY,
-  onDone,
-}: {
-  flower: (typeof FLOWERS)[number];
+const FLOWER_SIZE = 60;
+const SNAP = 60;
+
+interface FlowerItem {
+  id: number;
+  label: string;
+  color: string;
+  originX: number;
+  originY: number;
   slotX: number;
   slotY: number;
+}
+
+function DraggableFlower({
+  flower,
+  onDone,
+}: {
+  flower: FlowerItem;
   onDone: (id: number) => void;
 }) {
-  const startX = flower.id * 90 - 90;
-  const x = useSharedValue(startX);
-  const y = useSharedValue(0);
+  const x = useSharedValue(flower.originX);
+  const y = useSharedValue(flower.originY);
   const placed = useSharedValue(false);
 
   const pan = Gesture.Pan()
@@ -42,25 +50,26 @@ function DraggableFlower({
       runOnJS(lightImpact)();
     })
     .onUpdate((event) => {
-      x.value = startX + event.translationX;
-      y.value = event.translationY;
+      x.value = flower.originX + event.translationX;
+      y.value = flower.originY + event.translationY;
     })
     .onEnd(() => {
-      const dx = slotX - (startX + x.value - startX);
-      const dy = slotY - y.value;
-      if (Math.sqrt(dx * dx + dy * dy) < 70) {
-        x.value = withSpring(slotX);
-        y.value = withSpring(slotY);
+      const dx = flower.slotX - x.value;
+      const dy = flower.slotY - y.value;
+      if (Math.sqrt(dx * dx + dy * dy) < SNAP) {
+        x.value = withSpring(flower.slotX);
+        y.value = withSpring(flower.slotY);
         placed.value = true;
         runOnJS(onDone)(flower.id);
       } else {
-        x.value = withSpring(startX);
-        y.value = withSpring(0);
+        x.value = withSpring(flower.originX);
+        y.value = withSpring(flower.originY);
       }
     });
 
   const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateX: x.value }, { translateY: y.value }],
+    left: x.value,
+    top: y.value,
   }));
 
   return (
@@ -83,7 +92,17 @@ export default function FlowerArrangeScene() {
   const [placed, setPlaced] = useState<Set<number>>(new Set());
 
   const vaseX = width / 2 - 35;
-  const vaseY = Math.min(height - 250, 360);
+  const vaseY = 280;
+  const trayY = Math.min(height - 180, height - 80);
+  const trayX = (width - FLOWERS.length * 100 + 20) / 2;
+
+  const flowers: FlowerItem[] = FLOWERS.map((f, i) => ({
+    ...f,
+    originX: trayX + i * 100,
+    originY: trayY,
+    slotX: vaseX + 5,
+    slotY: vaseY - 30 - i * (FLOWER_SIZE - 10),
+  }));
 
   const handleDone = useCallback((id: number) => {
     setPlaced((prev) => {
@@ -100,8 +119,6 @@ export default function FlowerArrangeScene() {
     });
   }, []);
 
-  const startX = (width - FLOWERS.length * 90) / 2;
-
   return (
     <SceneShell backgroundColor={COLORS.pastels[0]} safeArea={false}>
       <View style={styles.stage}>
@@ -114,17 +131,9 @@ export default function FlowerArrangeScene() {
 
         <View style={[styles.vase, { left: vaseX, top: vaseY }]} />
 
-        <View style={[styles.tray, { left: startX, top: vaseY + 140 }]}>
-          {FLOWERS.map((f, i) => (
-            <DraggableFlower
-              key={f.id}
-              flower={f}
-              slotX={vaseX - startX + 35}
-              slotY={-120 - i * 35}
-              onDone={handleDone}
-            />
-          ))}
-        </View>
+        {flowers.map((f) => (
+          <DraggableFlower key={f.id} flower={f} onDone={handleDone} />
+        ))}
 
         {placed.size === FLOWERS.length ? (
           <Text style={styles.celebrate}>Beautiful!</Text>
@@ -160,21 +169,11 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primaryDark,
     backgroundColor: 'rgba(255,255,255,0.45)',
   },
-  tray: {
-    position: 'absolute',
-    flexDirection: 'row',
-    width: FLOWERS.length * 90,
-    height: 80,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    borderRadius: RADIUS.xl,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   flower: {
-    width: 60,
-    height: 60,
+    position: 'absolute',
+    width: FLOWER_SIZE,
+    height: FLOWER_SIZE,
     borderRadius: RADIUS.full,
-    marginHorizontal: 15,
     shadowColor: '#000',
     shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 2 },
