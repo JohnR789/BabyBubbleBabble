@@ -1,17 +1,36 @@
 {
   "expo": {
-    "name": "BabyBubbleBabble",
+    "name": "Baby Bubble Babble",
     "slug": "babybubblebabble",
     "scheme": "babybubblebabble",
+    "icon": "./assets/icon.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#f6f7ff"
+    },
     "android": {
-      "package": "com.anonymous.babybubblebabble"
+      "package": "com.anonymous.babybubblebabble",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#e7f5ff"
+      }
     },
     "plugins": [
       "expo-font",
-      "expo-asset"
+      "expo-asset",
+      "expo-iap",
+      [
+        "expo-audio",
+        {
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ]
     ],
     "ios": {
-      "bundleIdentifier": "com.anonymous.babybubblebabble"
+      "bundleIdentifier": "com.anonymous.babybubblebabble",
+      "deploymentTarget": "15.0"
     }
   }
 }

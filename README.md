@@ -1,97 +1,86 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# Baby Bubble Babble
 
-# Getting Started
+A gentle, offline-first Montessori-inspired playground for infants and toddlers.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## Stack
 
-## Step 1: Start Metro
+- Expo SDK 54
+- React Native 0.81
+- TypeScript
+- React Navigation
+- React Native Reanimated + Gesture Handler
+- expo-audio for background music and sound effects
+- expo-speech for spoken letter/number/encouragement feedback
+- expo-iap (with safe mock fallback) for premium store integration
+- AsyncStorage for parent settings and premium state
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
-
-To start the Metro dev server, run the following command from the root of your React Native project:
-
-```sh
-# Using npm
-npm start
-
-# OR using Yarn
-yarn start
-```
-
-## Step 2: Build and run your app
-
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
-
-### Android
+## Quick start
 
 ```sh
-# Using npm
-npm run android
-
-# OR using Yarn
-yarn android
+npm ci
+npm run start          # Start the Expo dev server
 ```
 
-### iOS
-
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
-
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
+In a separate terminal:
 
 ```sh
-bundle install
+npm run ios            # or npm run android
 ```
 
-Then, and every time you update your native dependencies, run:
+## Validation
 
 ```sh
-bundle exec pod install
+npm run typecheck      # TypeScript check
+npm run lint           # ESLint
+npm run test           # Jest tests
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+## Build verification
 
 ```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
+npx expo export -p ios
+npx expo export -p android
+npx expo export -p web
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+## What's in this branch
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+- Central theme (`theme/`) and asset/audio registry (`assets/index.ts`, `constants/`).
+- Persistent parent settings (`SettingsContext.tsx`) with music, SFX, reduced motion, and night mode toggles.
+- Reusable `SceneShell` with background music, safe-area handling, and parental gate for every scene.
+- Gated parent area using `ParentalLock` on the home screen.
+- Premium/subscription architecture (`PremiumContext.tsx`, `services/purchase.ts`):
+  - `expo-iap` integration with a built-in fallback to a mock provider for tests, Expo Go, and local preview builds.
+  - `services/purchaseVerifier.ts` posts receipts to a backend endpoint before unlocking premium.
+  - Parent-only subscribe, restore, and trial controls in `ParentalArea`.
+  - Scene gating: free scenes (Pouring, Color Sort, Sound Match, Letter Garden, Counting) and premium scenes (Flower Arrange, Button Frame, Puzzle Map, Shape Trace, Spoon Transfer).
+- 10 Montessori-inspired play areas:
+  - `PouringScene` — press and hold the pitcher to fill the cup.
+  - `ColorSortScene` — drag colored balls into matching bowls.
+  - `SoundMatchScene` — tap sound cylinders to find matching pairs.
+  - `LetterGardenScene` — tap flowers to hear letter sounds.
+  - `CountingScene` — drag beads onto a rod and count aloud.
+  - `FlowerArrangeScene` — drag flowers into a vase.
+  - `ButtonFrameScene` — tap each button through its hole.
+  - `PuzzleMapScene` — drag colored puzzle pieces into their slots.
+  - `ShapeTraceScene` — tap numbered dots in order to trace shapes.
+  - `SpoonTransferScene` — drag pom-poms from one bowl to another.
+- AI-generated pastel scene illustrations and generated sound effects (pop, snap, plop, scoop, water pour, rattle, bell, drum, success, ambient music).
+- App icon (`assets/icon.png`), Android adaptive icon (`assets/adaptive-icon.png`), and splash screen (`assets/splash.png`).
+- Light haptic feedback on every toddler tap via `expo-haptics`.
 
-## Step 3: Modify your app
+## Production store setup
 
-Now that you have successfully run the app, let's make changes!
+See [`docs/STORE_SETUP.md`](docs/STORE_SETUP.md) for:
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+- Backend receipt verification endpoint contract.
+- Apple App Store Connect API key setup.
+- Google Play service account setup.
+- Product IDs and bundle identifier configuration.
+- Environment variable setup (`EXPO_PUBLIC_PURCHASE_VERIFICATION_URL`).
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+## Known limitations
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+- The purchase service falls back to a mock implementation when `expo-iap`'s native module is not available. Real store receipt validation and server-side entitlement checks are architected but require a hosted verifier and production store credentials.
+- The optional FastAPI receipt verifier is in `server/` and can be deployed to Fly.io manually; it is not on the critical path for local development.
+- Web-specific React Native warnings (`useNativeDriver`, `shadow*`) are benign on mobile targets and only appear when running in the browser for local testing.

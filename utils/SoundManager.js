@@ -1,152 +1,102 @@
-// utils/SoundManager.js
-import { Platform } from 'react-native';
-import { Audio } from 'expo-av';
+import { createAudioPlayer, setAudioModeAsync } from 'expo-audio';
+import { SOUNDS } from '../assets';
 
-/** Toggle for local debugging (kept false to silence logs) */
 const DEBUG_AUDIO = false;
 const debugLog = (...args) => { if (DEBUG_AUDIO) console.log('[SoundManager]', ...args); };
 
-/* ------------------------------------------------------------------ */
-/* Sources                                                            */
-/* ------------------------------------------------------------------ */
-const SOURCES = {
-  pop:    require('../assets/sounds/pops/pop1.mp3'),
-  giggle: require('../assets/sounds/giggles/giggle1.mp3'),
-};
-
-const animalSounds = {
-  duck_quack:  require('../assets/sounds/animal_sounds/duck.mp3'),
-  sheep_baa:   require('../assets/sounds/animal_sounds/sheep.wav'),
-  frog_ribbit: require('../assets/sounds/animal_sounds/frog.mp3'),
-  horse:       require('../assets/sounds/animal_sounds/horse.wav'),
-  cow:         require('../assets/sounds/animal_sounds/cow.wav'),
-};
-
-/* ------------------------------------------------------------------ */
-/* Cache (key -> { sound, loaded, loading })                          */
-/* ------------------------------------------------------------------ */
-const cache = new Map();
 let audioModeSet = false;
+let sfxEnabled = true;
+const cache = new Map();
 
-/* ------------------------------------------------------------------ */
-/* Audio mode                                                         */
-/*  - iOS: uses iOS keys only                                         */
-/*  - Android: avoids interruptionModeAndroid (was causing warning)   */
-/* ------------------------------------------------------------------ */
-export async function ensureAudioMode() {
+async function ensureAudioMode() {
   if (audioModeSet) return;
-
   try {
-    if (Platform.OS === 'ios') {
-      await Audio.setAudioModeAsync({
-        playsInSilentModeIOS: true,
-        allowsRecordingIOS: false,
-        interruptionModeIOS: Audio.INTERRUPTION_MODE_IOS_DO_NOT_MIX,
-        staysActiveInBackground: false,
-      });
-    } else if (Platform.OS === 'android') {
-      await Audio.setAudioModeAsync({
-        // NOTE: We intentionally do NOT set interruptionModeAndroid to avoid
-        //       "invalid value" warnings on newer SDKs.
-        shouldDuckAndroid: false,
-        playThroughEarpieceAndroid: false,
-        staysActiveInBackground: false,
-      });
-    } else {
-      await Audio.setAudioModeAsync({});
-    }
-
+    await setAudioModeAsync({
+      playsInSilentMode: true,
+      interruptionMode: 'mixWithOthers',
+    });
     audioModeSet = true;
     debugLog('Audio mode configured');
   } catch {
-    // Swallow to keep logs clean in production
+    // Swallow to keep play functional in unsupported environments.
   }
 }
 
-/* ------------------------------------------------------------------ */
-/* Load / replay helpers                                              */
-/* ------------------------------------------------------------------ */
-async function ensureLoaded(key, src) {
-  await ensureAudioMode();
-
-  let entry = cache.get(key);
-  if (!entry) {
-    entry = { sound: new Audio.Sound(), loaded: false, loading: null };
-    cache.set(key, entry);
+function getPlayer(key, src) {
+  if (!cache.has(key)) {
+    debugLog('Creating player for', key);
+    cache.set(key, createAudioPlayer(src));
   }
-
-  if (!entry.loaded) {
-    if (!entry.loading) {
-      entry.loading = entry.sound
-        .loadAsync(src, { shouldPlay: false, volume: 1.0 }, false)
-        .then(() => { entry.loaded = true; })
-        .catch(() => {
-          // Reset entry so future attempts can try again
-          entry.loading = null;
-          entry.loaded = false;
-          throw new Error('load failed');
-        });
-    }
-    await entry.loading;
-  }
-
-  return entry.sound;
+  return cache.get(key);
 }
 
-async function safeReplay(sound) {
+function replay(player) {
   try {
-    await sound.replayAsync();
-  } catch {
-    try { await sound.setPositionAsync(0); } catch {}
-    try { await sound.playAsync(); } catch {}
-  }
+    player.seekTo(0).catch(() => {});
+    player.play();
+  } catch {}
 }
 
-/* ------------------------------------------------------------------ */
-/* Public API                                                         */
-/* ------------------------------------------------------------------ */
+export function setSfxEnabled(enabled) {
+  sfxEnabled = enabled;
+}
+
+export function isSfxEnabled() {
+  return sfxEnabled;
+}
+
 export async function preloadCoreSfx() {
   try {
-    await Promise.all([
-      ensureLoaded('pop', SOURCES.pop),
-      ensureLoaded('giggle', SOURCES.giggle),
-    ]);
+    await ensureAudioMode();
+    Object.entries(SOUNDS.effects).forEach(([key, src]) => {
+      getPlayer(`effect:${key}`, src);
+    });
+    getPlayer('music:ambient', SOUNDS.music.ambient);
   } catch {}
 }
 
-export async function playPopSound() {
-  try {
-    const s = await ensureLoaded('pop', SOURCES.pop);
-    await safeReplay(s);
-  } catch {}
-}
-
-export async function playGiggleSound() {
-  try {
-    const s = await ensureLoaded('giggle', SOURCES.giggle);
-    await safeReplay(s);
-  } catch {}
-}
-
-export async function playAnimalSound(name) {
-  const src = animalSounds[name];
+export async function playEffect(name) {
+  if (!sfxEnabled) return;
+  const src = SOUNDS.effects[name];
   if (!src) return;
   try {
-    const s = await ensureLoaded(name, src);
-    await safeReplay(s);
+    await ensureAudioMode();
+    replay(getPlayer(`effect:${name}`, src));
+  } catch {}
+}
+
+export async function playPop() { return playEffect('pop'); }
+export async function playSnap() { return playEffect('snap'); }
+export async function playPlop() { return playEffect('plop'); }
+export async function playScoop() { return playEffect('scoop'); }
+export async function playWaterPour() { return playEffect('waterPour'); }
+export async function playRattle() { return playEffect('rattle'); }
+export async function playBell() { return playEffect('bell'); }
+export async function playDrum() { return playEffect('drum'); }
+export async function playSuccess() { return playEffect('success'); }
+
+export async function playMusic() {
+  try {
+    await ensureAudioMode();
+    const p = getPlayer('music:ambient', SOUNDS.music.ambient);
+    p.loop = true;
+    p.play();
+  } catch {}
+}
+
+export async function pauseMusic() {
+  try {
+    const p = cache.get('music:ambient');
+    p?.pause();
   } catch {}
 }
 
 export async function unloadAll() {
-  for (const [, entry] of cache) {
+  for (const [, player] of cache) {
     try {
-      if (entry.loading) await entry.loading;
-      await entry.sound.unloadAsync();
+      player.remove();
     } catch {}
   }
   cache.clear();
-  audioModeSet = false; // allow re-init after full unload
+  audioModeSet = false;
 }
-
-
-
