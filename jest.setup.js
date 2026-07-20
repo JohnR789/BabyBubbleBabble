@@ -66,3 +66,28 @@ jest.mock('react-native-safe-area-context', () => {
     SafeAreaFrameContext,
   };
 });
+
+jest.mock('@react-navigation/native', () => {
+  const React = require('react');
+  const fakeNav = { navigate: jest.fn(), goBack: jest.fn(), setOptions: jest.fn() };
+  const NavigationContext = React.createContext(fakeNav);
+  const actual = jest.requireActual('@react-navigation/native');
+  return {
+    ...actual,
+    NavigationContainer: ({ children }) => React.createElement(NavigationContext.Provider, { value: fakeNav }, children),
+    useNavigation: () => fakeNav,
+    useRoute: () => ({ name: 'Home', params: {} }),
+  };
+});
+
+jest.mock('@react-navigation/stack', () => {
+  const React = require('react');
+  const fakeNav = { navigate: jest.fn(), goBack: jest.fn(), setOptions: jest.fn() };
+  return {
+    createStackNavigator: () => ({
+      Navigator: ({ children }) => children,
+      Screen: ({ component: Component, initialParams }) =>
+        React.createElement(Component, { navigation: fakeNav, route: { params: initialParams ?? {} } }),
+    }),
+  };
+});
