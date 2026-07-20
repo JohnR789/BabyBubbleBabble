@@ -10,7 +10,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import SceneShell from '../components/SceneShell';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../theme';
 import { IMAGES } from '../assets';
-import { playSnap, playSuccess } from '../utils/SoundManager';
+import { playSnap } from '../utils/SoundManager';
 import { speak } from '../utils/speech';
 import { lightImpact } from '../utils/haptics';
 
@@ -91,6 +91,7 @@ function DraggableBall({
 export default function ColorSortScene() {
   const { width, height } = useWindowDimensions();
   const [placed, setPlaced] = useState<Set<string>>(new Set());
+  const done = placed.size === COLORS_LIST.length;
 
   const slotY = 160;
   const totalSlotWidth = COLORS_LIST.length * (BOWL_SIZE + 20) - 20;
@@ -113,8 +114,7 @@ export default function ColorSortScene() {
       const next = new Set(prev);
       next.add(key);
       if (next.size === COLORS_LIST.length) {
-        playSuccess();
-        speak('You sorted every color!');
+        // celebration handled by SceneShell
       } else {
         playSnap();
         const label = COLORS_LIST.find((c) => c.key === key)?.label ?? key;
@@ -125,7 +125,7 @@ export default function ColorSortScene() {
   }, []);
 
   return (
-    <SceneShell backgroundColor={COLORS.pastels[1]} safeArea={false}>
+    <SceneShell backgroundColor={COLORS.pastels[1]} safeArea={false} celebrate={done} celebrationMessage="You sorted every color!">
       <View style={styles.stage}>
         <Image
           source={IMAGES.scenes.colorSort}

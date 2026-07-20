@@ -11,7 +11,7 @@ import {
 import SceneShell from '../components/SceneShell';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../theme';
 import { IMAGES } from '../assets';
-import { playPop, playSuccess } from '../utils/SoundManager';
+import { playPop } from '../utils/SoundManager';
 import { speak } from '../utils/speech';
 import { lightImpact } from '../utils/haptics';
 
@@ -53,11 +53,13 @@ export default function ShapeTraceScene() {
   const [shapeIndex, setShapeIndex] = useState(0);
   const [visited, setVisited] = useState<Set<number>>(new Set());
   const [fill] = useState(new RNAnimated.Value(0));
+  const [celebrating, setCelebrating] = useState(false);
 
   const shape = SHAPES[shapeIndex];
 
   useEffect(() => {
     fill.setValue(0);
+    setCelebrating(false);
   }, [shapeIndex, fill]);
 
   const handleDot = (i: number) => {
@@ -68,8 +70,7 @@ export default function ShapeTraceScene() {
       next.add(i);
       if (next.size === shape.dots.length) {
         RNAnimated.timing(fill, { toValue: 1, duration: 400, useNativeDriver: true }).start(() => {
-          playSuccess();
-          speak(`You traced a ${shape.label}!`);
+          setCelebrating(true);
           setTimeout(() => {
             setShapeIndex((idx) => (idx + 1) % SHAPES.length);
             setVisited(new Set());
@@ -84,7 +85,7 @@ export default function ShapeTraceScene() {
   };
 
   return (
-    <SceneShell backgroundColor={COLORS.pastels[3]} safeArea={false}>
+    <SceneShell backgroundColor={COLORS.pastels[3]} safeArea={false} celebrate={celebrating} celebrationMessage={`You traced a ${shape.label}!`}>
       <View style={styles.stage}>
         <Image
           source={IMAGES.scenes.shapeTrace}

@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -20,11 +20,14 @@ const LETTERS = ['A', 'B', 'C', 'D', 'E'];
 export default function LetterGardenScene() {
   const { width } = useWindowDimensions();
   const scales = useRef(LETTERS.map(() => new Animated.Value(1))).current;
+  const [tapped, setTapped] = useState<Set<string>>(new Set());
+  const done = tapped.size === LETTERS.length;
 
   const handlePress = (letter: string, index: number) => {
     lightImpact();
     playPop();
     speakLetter(letter);
+    setTapped((prev) => new Set([...prev, letter]));
     Animated.sequence([
       Animated.timing(scales[index], { toValue: 1.3, duration: 120, useNativeDriver: true }),
       Animated.timing(scales[index], { toValue: 1, duration: 180, useNativeDriver: true }),
@@ -35,7 +38,7 @@ export default function LetterGardenScene() {
   const size = Math.min(110, (width - SPACING.lg * 2 - 20 * (columns - 1)) / columns);
 
   return (
-    <SceneShell backgroundColor={COLORS.pastels[3]} safeArea={false}>
+    <SceneShell backgroundColor={COLORS.pastels[3]} safeArea={false} celebrate={done} celebrationMessage="You found all the letters!">
       <View style={styles.stage}>
         <Image
           source={IMAGES.scenes.letterGarden}

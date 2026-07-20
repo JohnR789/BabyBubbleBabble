@@ -10,8 +10,7 @@ import {
 import SceneShell from '../components/SceneShell';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../theme';
 import { IMAGES } from '../assets';
-import { playPop, playSuccess, playWaterPour } from '../utils/SoundManager';
-import { speak } from '../utils/speech';
+import { playPop, playWaterPour } from '../utils/SoundManager';
 import { lightImpact } from '../utils/haptics';
 
 export default function PouringScene() {
@@ -31,8 +30,6 @@ export default function PouringScene() {
           clearInterval(intervalRef.current as ReturnType<typeof setInterval>);
           if (!done) {
             setDone(true);
-            playSuccess();
-            speak('You poured the water!');
           }
           return 100;
         }
@@ -56,7 +53,7 @@ export default function PouringScene() {
   };
 
   return (
-    <SceneShell backgroundColor={COLORS.pastels[0]} safeArea={false}>
+    <SceneShell backgroundColor={COLORS.pastels[0]} safeArea={false} celebrate={done} celebrationMessage="You poured the water!">
       <View style={styles.stage}>
         <Text style={styles.prompt}>Hold the pitcher to pour</Text>
 

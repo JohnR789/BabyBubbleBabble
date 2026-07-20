@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,7 @@ import {
 import SceneShell from '../components/SceneShell';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../theme';
 import { IMAGES } from '../assets';
-import { playBell, playDrum, playRattle, playSuccess } from '../utils/SoundManager';
+import { playBell, playDrum, playRattle } from '../utils/SoundManager';
 import { speak } from '../utils/speech';
 import { lightImpact } from '../utils/haptics';
 
@@ -42,13 +42,7 @@ export default function SoundMatchScene() {
   const [selected, setSelected] = useState<string | null>(null);
   const [matched, setMatched] = useState<Set<string>>(new Set());
   const [shuffled] = useState(() => [...CYLINDERS].sort(() => Math.random() - 0.5));
-
-  useEffect(() => {
-    if (matched.size === CYLINDERS.length) {
-      playSuccess();
-      speak('You matched all the sounds!');
-    }
-  }, [matched]);
+  const done = matched.size === CYLINDERS.length;
 
   const handleTap = (id: string, soundKey: string) => {
     if (matched.has(id)) return;
@@ -83,7 +77,7 @@ export default function SoundMatchScene() {
   const size = (width - SPACING.lg * 2 - spacing * (columns - 1)) / columns;
 
   return (
-    <SceneShell backgroundColor={COLORS.pastels[2]} safeArea={false}>
+    <SceneShell backgroundColor={COLORS.pastels[2]} safeArea={false} celebrate={done} celebrationMessage="You matched all the sounds!">
       <View style={styles.stage}>
         <Image
           source={IMAGES.scenes.soundCylinders}

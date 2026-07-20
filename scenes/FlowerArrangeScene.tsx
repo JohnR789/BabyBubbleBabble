@@ -10,7 +10,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import SceneShell from '../components/SceneShell';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../theme';
 import { IMAGES } from '../assets';
-import { playPlop, playSuccess } from '../utils/SoundManager';
+import { playPlop } from '../utils/SoundManager';
 import { speak } from '../utils/speech';
 import { lightImpact } from '../utils/haptics';
 
@@ -90,6 +90,7 @@ function DraggableFlower({
 export default function FlowerArrangeScene() {
   const { width, height } = useWindowDimensions();
   const [placed, setPlaced] = useState<Set<number>>(new Set());
+  const done = placed.size === FLOWERS.length;
 
   const vaseX = width / 2 - 35;
   const vaseY = 280;
@@ -108,11 +109,10 @@ export default function FlowerArrangeScene() {
     setPlaced((prev) => {
       const next = new Set(prev);
       next.add(id);
-      playPlop();
       if (next.size === FLOWERS.length) {
-        playSuccess();
-        speak('What a beautiful arrangement!');
+        // celebration handled by SceneShell
       } else {
+        playPlop();
         speak('Lovely!');
       }
       return next;
@@ -120,7 +120,7 @@ export default function FlowerArrangeScene() {
   }, []);
 
   return (
-    <SceneShell backgroundColor={COLORS.pastels[0]} safeArea={false}>
+    <SceneShell backgroundColor={COLORS.pastels[0]} safeArea={false} celebrate={done} celebrationMessage="What a beautiful arrangement!">
       <View style={styles.stage}>
         <Image
           source={IMAGES.scenes.flowerArrange}

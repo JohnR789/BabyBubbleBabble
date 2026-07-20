@@ -10,7 +10,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import SceneShell from '../components/SceneShell';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../theme';
 import { IMAGES } from '../assets';
-import { playSnap, playSuccess } from '../utils/SoundManager';
+import { playSnap } from '../utils/SoundManager';
 import { speak } from '../utils/speech';
 import { lightImpact } from '../utils/haptics';
 
@@ -89,6 +89,7 @@ function DraggablePiece({
 export default function PuzzleMapScene() {
   const { width } = useWindowDimensions();
   const [placed, setPlaced] = useState<Set<string>>(new Set());
+  const done = placed.size === PIECES.length;
 
   const boardX = (width - 240) / 2;
   const boardY = 260;
@@ -97,11 +98,10 @@ export default function PuzzleMapScene() {
     setPlaced((prev) => {
       const next = new Set(prev);
       next.add(id);
-      playSnap();
       if (next.size === PIECES.length) {
-        playSuccess();
-        speak('Puzzle complete!');
+        // celebration handled by SceneShell
       } else {
+        playSnap();
         speak('Good fit!');
       }
       return next;
@@ -109,7 +109,7 @@ export default function PuzzleMapScene() {
   }, []);
 
   return (
-    <SceneShell backgroundColor={COLORS.pastels[2]} safeArea={false}>
+    <SceneShell backgroundColor={COLORS.pastels[2]} safeArea={false} celebrate={done} celebrationMessage="Puzzle complete!">
       <View style={styles.stage}>
         <Image
           source={IMAGES.scenes.puzzleMap}

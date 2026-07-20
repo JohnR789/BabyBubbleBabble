@@ -10,7 +10,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import SceneShell from '../components/SceneShell';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../theme';
 import { IMAGES } from '../assets';
-import { playPlop, playSuccess } from '../utils/SoundManager';
+import { playPlop } from '../utils/SoundManager';
 import { speak } from '../utils/speech';
 import { lightImpact } from '../utils/haptics';
 
@@ -90,6 +90,7 @@ function DraggablePom({
 export default function SpoonTransferScene() {
   const { width, height } = useWindowDimensions();
   const [moved, setMoved] = useState<Set<number>>(new Set());
+  const done = moved.size === POM_POMS.length;
 
   const leftX = width * 0.2;
   const leftY = Math.min(height - 180, height - 80);
@@ -103,11 +104,10 @@ export default function SpoonTransferScene() {
     setMoved((prev) => {
       const next = new Set(prev);
       next.add(id);
-      playPlop();
       if (next.size === POM_POMS.length) {
-        playSuccess();
-        speak('All transferred!');
+        // celebration handled by SceneShell
       } else {
+        playPlop();
         speak('Scoop!');
       }
       return next;
@@ -115,7 +115,7 @@ export default function SpoonTransferScene() {
   }, []);
 
   return (
-    <SceneShell backgroundColor={COLORS.pastels[4]} safeArea={false}>
+    <SceneShell backgroundColor={COLORS.pastels[4]} safeArea={false} celebrate={done} celebrationMessage="All transferred!">
       <View style={styles.stage}>
         <Image
           source={IMAGES.scenes.spoonTransfer}

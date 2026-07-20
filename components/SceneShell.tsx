@@ -7,14 +7,17 @@ import type { AppParamList } from '../types';
 import { ROUTES } from '../constants';
 import MusicManager from '../utils/MusicManager';
 import ParentalLock from './ParentalLock';
+import Celebration from './Celebration';
 
 interface SceneShellProps {
   children: React.ReactNode;
   backgroundColor?: string;
   safeArea?: boolean;
+  celebrate?: boolean;
+  celebrationMessage?: string;
 }
 
-export default function SceneShell({ children, backgroundColor = '#f6f7ff', safeArea = true }: SceneShellProps) {
+export default function SceneShell({ children, backgroundColor = '#f6f7ff', safeArea = true, celebrate = false, celebrationMessage = 'Great job!' }: SceneShellProps) {
   const navigation = useNavigation<StackNavigationProp<AppParamList>>();
   const insets = useSafeAreaInsets();
 
@@ -27,6 +30,7 @@ export default function SceneShell({ children, backgroundColor = '#f6f7ff', safe
     <View style={containerStyle}>
       <MusicManager />
       <View style={styles.stage}>{children}</View>
+      <Celebration visible={celebrate} message={celebrationMessage} />
       <View style={lockWrapStyle}>
         <ParentalLock onUnlock={() => navigation.navigate(ROUTES.ParentalArea)} />
       </View>

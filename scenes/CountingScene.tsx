@@ -10,7 +10,7 @@ import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import SceneShell from '../components/SceneShell';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../theme';
 import { IMAGES } from '../assets';
-import { playSnap, playSuccess } from '../utils/SoundManager';
+import { playSnap } from '../utils/SoundManager';
 import { speakNumber } from '../utils/speech';
 import { lightImpact } from '../utils/haptics';
 
@@ -79,6 +79,7 @@ function DraggableBead({
 export default function CountingScene() {
   const { width, height } = useWindowDimensions();
   const [placed, setPlaced] = useState<Set<number>>(new Set());
+  const done = placed.size === COUNT;
 
   const slotY = 200;
   const totalSlotWidth = COUNT * (SLOT_SIZE + 16) - 16;
@@ -101,8 +102,7 @@ export default function CountingScene() {
       const next = new Set(prev);
       next.add(id);
       if (next.size === COUNT) {
-        playSuccess();
-        speakNumber(COUNT);
+        // celebration handled by SceneShell
       } else {
         playSnap();
         speakNumber(next.size);
@@ -112,7 +112,7 @@ export default function CountingScene() {
   }, []);
 
   return (
-    <SceneShell backgroundColor={COLORS.pastels[4]} safeArea={false}>
+    <SceneShell backgroundColor={COLORS.pastels[4]} safeArea={false} celebrate={done} celebrationMessage={`You counted to ${COUNT}!`}>
       <View style={styles.stage}>
         <Image
           source={IMAGES.scenes.counting}

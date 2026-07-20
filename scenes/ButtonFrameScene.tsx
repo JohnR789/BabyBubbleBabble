@@ -15,7 +15,7 @@ import Animated, {
 import SceneShell from '../components/SceneShell';
 import { COLORS, TYPOGRAPHY, SPACING, RADIUS } from '../theme';
 import { IMAGES } from '../assets';
-import { playSnap, playSuccess } from '../utils/SoundManager';
+import { playSnap } from '../utils/SoundManager';
 import { speak } from '../utils/speech';
 import { lightImpact } from '../utils/haptics';
 
@@ -28,6 +28,7 @@ const BUTTONS = [
 export default function ButtonFrameScene() {
   const { width } = useWindowDimensions();
   const [buttoned, setButtoned] = useState<Set<number>>(new Set());
+  const done = buttoned.size === BUTTONS.length;
 
   const handlePress = (id: number) => {
     if (buttoned.has(id)) return;
@@ -37,8 +38,7 @@ export default function ButtonFrameScene() {
       const next = new Set(prev);
       next.add(id);
       if (next.size === BUTTONS.length) {
-        playSuccess();
-        speak('All buttoned up!');
+        // celebration handled by SceneShell
       } else {
         speak('Snap!');
       }
@@ -50,7 +50,7 @@ export default function ButtonFrameScene() {
   const startX = (width - totalWidth) / 2;
 
   return (
-    <SceneShell backgroundColor={COLORS.pastels[1]} safeArea={false}>
+    <SceneShell backgroundColor={COLORS.pastels[1]} safeArea={false} celebrate={done} celebrationMessage="All buttoned up!">
       <View style={styles.stage}>
         <Image
           source={IMAGES.scenes.buttonFrame}
